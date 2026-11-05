@@ -171,5 +171,25 @@ class Settings(BaseModel):
         default_factory=lambda: os.getenv("AI_ENRICHMENT_ENABLED", "false").lower() in ("true", "1", "yes")
     )
 
+    # Twilio Voice Incident Alerting Configuration
+    twilio_account_sid: Optional[str] = Field(
+        default_factory=lambda: os.getenv("TWILIO_ACCOUNT_SID", None)
+    )
+    twilio_auth_token: Optional[str] = Field(
+        default_factory=lambda: os.getenv("TWILIO_AUTH_TOKEN", None)
+    )
+    twilio_from_number: Optional[str] = Field(
+        default_factory=lambda: os.getenv("TWILIO_FROM_NUMBER", None)
+    )
+    twilio_to_number: str = Field(
+        default_factory=lambda: os.getenv("TWILIO_TO_NUMBER", "+17372508034")
+    )
+    twilio_voice_enabled: bool = Field(
+        default_factory=lambda: os.getenv("TWILIO_VOICE_ENABLED", "true").lower() in ("true", "1", "yes")
+    )
+    twilio_cooldown_seconds: int = Field(
+        default_factory=lambda: int(os.getenv("TWILIO_COOLDOWN_SECONDS", "60"))
+    )
+
 
 settings = Settings()

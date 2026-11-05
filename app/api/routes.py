@@ -52,6 +52,7 @@ from app.api.generator import generate_log
 from app.pipeline_monitor import global_throughput_monitor
 from app.parsers.format_checker import global_format_drift_checker
 from app.parsers.c_fast_parser import c_fast_parser
+from app.notifications.twilio_voice import twilio_voice_notifier
 
 logger = logging.getLogger("ulpf.api.routes")
 router = APIRouter()
@@ -61,6 +62,7 @@ forwarder = LogForwarder()
 persistence_manager = PersistenceManager()
 source_registry = SourceRegistry(db=persistence_manager.db)
 global_format_drift_checker.registry = pipeline.registry
+
 
 # API Ingest Stats
 api_ingest_stats = {
@@ -111,6 +113,8 @@ def broadcast_event(event_dict: Dict[str, Any]):
             except Exception:
                 pass
 
+
+twilio_voice_notifier.broadcast_callback = broadcast_event
 
 BLOCKED_SOURCES: set = set()
 BLOCKED_IPS: set = set()  # Active IP blacklist
@@ -535,6 +539,18 @@ def store_and_broadcast(ir_event, source_name: str = "network_device"):
             "source": source_name,
             "message": f"Blocked connection attempt dropped from {src_ip} ({source_name})",
         })
+
+    # Automated Twilio Voice Call Alert for Critical Threat Logs
+    is_critical_threat = (
+        severity_str.lower() == "critical"
+        or (threat_info and str(threat_info.get("severity", "")).lower() == "critical")
+        or (hasattr(ir_event, "severity") and str(ir_event.severity or "").lower() == "critical")
+    )
+    if is_critical_threat:
+        twilio_voice_notifier.dispatch_critical_threat_call(
+            event_record=record,
+            threat_info=threat_info,
+        )
 
     # If log is unparsed or unknown format, automatically route to Unknown Logs Queue for AI review
     if ir_event.status == "unparsed" or ir_event.original.format in ("Unknown", "Plaintext"):
@@ -4213,3 +4229,62 @@ def get_ebpf_metrics():
         }
     except Exception as e:
         return {"passed": 0, "dropped": 0, "error": str(e)}
+
+
+@router.get("/api/v1/notifications/twilio")
+@router.get("/notifications/twilio")
+def get_twilio_status():
+    """Retrieve Twilio voice alert system status, configuration, and recent call logs."""
+    return twilio_voice_notifier.get_status()
+
+
+@router.post("/api/v1/notifications/twilio/test-call")
+@router.post("/notifications/twilio/test-call")
+def trigger_twilio_test_call(body: Dict[str, Any] = Body(default={})):
+    """
+    Manually trigger an on-demand Twilio voice alert call to test telephony integration.
+    """
+    to_num = body.get("to_number") or twilio_voice_notifier.to_number
+    threat_type = body.get("threat_type", "Manual Diagnostic Security Test")
+    src_ip = body.get("src_ip", "198.51.100.22")
+    detail = body.get("detail", "High-severity simulation triggered from administrative console.")
+
+    result = twilio_voice_notifier.send_voice_call(
+        threat_type=threat_type,
+        src_ip=src_ip,
+        detail=detail,
+        to_number=to_num,
+        force=True,
+    )
+    return {
+        "status": "success",
+        "result": result,
+    }
+
+
+@router.post("/api/v1/notifications/twilio/config")
+@router.post("/notifications/twilio/config")
+def update_twilio_config(body: Dict[str, Any] = Body(...)):
+    """
+    Dynamically update Twilio phone alerting settings and credentials.
+    """
+    from app.config.settings import settings
+    if "enabled" in body:
+        settings.twilio_voice_enabled = bool(body["enabled"])
+    if "to_number" in body and body["to_number"]:
+        settings.twilio_to_number = str(body["to_number"]).strip()
+    if "from_number" in body and body["from_number"]:
+        settings.twilio_from_number = str(body["from_number"]).strip()
+    if "account_sid" in body and body["account_sid"]:
+        settings.twilio_account_sid = str(body["account_sid"]).strip()
+    if "auth_token" in body and body["auth_token"]:
+        settings.twilio_auth_token = str(body["auth_token"]).strip()
+    if "cooldown_seconds" in body:
+        settings.twilio_cooldown_seconds = int(body["cooldown_seconds"])
+
+    return {
+        "status": "success",
+        "message": "Twilio voice configuration updated.",
+        "current_status": twilio_voice_notifier.get_status(),
+    }
+

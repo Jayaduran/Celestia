@@ -306,6 +306,15 @@
             showSecurityToast(payload);
           }
 
+          // 1b. Twilio Automated Voice Alert Notification
+          if (payload.type === "TWILIO_CALL_ALERT") {
+            const callData = payload.data || {};
+            const toNum = callData.to_number || "+17372508034";
+            const threat = callData.threat_type || "Critical Threat";
+            const statusLabel = callData.status === "initiated" ? "Carrier Call Dialed" : (callData.status === "simulated" ? "Voice Call Simulated" : "Call Cooldown Active");
+            showToast(`📞 Twilio Voice Alert (${statusLabel}): ${toNum} - ${threat}`, "info");
+          }
+
           // 2. IP Blacklist Updated
           if (payload.type === "IP_BLOCK_CHANGED") {
             if (payload.is_blocked) {

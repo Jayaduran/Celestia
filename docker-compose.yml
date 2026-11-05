@@ -53,6 +53,12 @@ services:
       - STORAGE_DIR=/app/storage/raw
       - DB_SQLITE_PATH=/app/storage/ulpf_metadata.db
       - HF_TOKEN=${HF_TOKEN:-}
+      - TWILIO_VOICE_ENABLED=${TWILIO_VOICE_ENABLED:-true}
+      - TWILIO_TO_NUMBER=${TWILIO_TO_NUMBER:-+17372508034}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
+      - TWILIO_FROM_NUMBER=${TWILIO_FROM_NUMBER:-}
+      - TWILIO_COOLDOWN_SECONDS=${TWILIO_COOLDOWN_SECONDS:-60}
     user: root
     env_file:
       - path: .env
