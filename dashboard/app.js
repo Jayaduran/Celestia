@@ -6545,7 +6545,7 @@ normalization:
       </div>
 
       <!-- Cryptographic Evidence Ledger (Merkle Forest) -->
-      <div class="card" style="padding: 24px; margin-bottom: 24px;">
+      <div class="card" style="padding: 24px; margin-bottom: 24px;display: none">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
            <div>
              <h3 style="display:flex; align-items:center; gap:10px; font-size:15px; font-weight:800; color:var(--text-main); margin-bottom:4px;">
