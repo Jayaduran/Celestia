@@ -53,7 +53,7 @@
 
           <div class="target-host-pill-wrap">
             <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            <span id="sidebarTargetSummary">http://80.225.207.171:8000</span>
+            <span id="sidebarTargetSummary">http://127.0.0.1:8000</span>
           </div>
         </div>
       </div>
@@ -154,14 +154,14 @@
               <option value="http" selected>http://</option>
               <option value="https">https://</option>
             </select>
-            <input type="text" id="targetHostInput" class="input-field" value="80.225.207.171" style="width:130px; padding:3px 6px; font-family:var(--font-mono); font-size:11.5px; height:28px;">
+            <input type="text" id="targetHostInput" class="input-field" value="127.0.0.1" style="width:130px; padding:3px 6px; font-family:var(--font-mono); font-size:11.5px; height:28px;">
             <span style="font-family:var(--font-mono); font-weight:700;">:</span>
             <input type="number" id="targetPortInput" class="input-field" value="8000" style="width:65px; padding:3px 6px; font-family:var(--font-mono); font-size:11.5px; height:28px;">
           </div>
 
           <select id="targetMachinePresetSelect" class="input-field" style="width:150px; padding:2px 6px; font-size:11px; height:30px;">
             <option value="" disabled selected>Target Presets...</option>
-            <option value="80.225.207.171:8000">Local VM (80.225.207.171:8000)</option>
+            <option value="127.0.0.1:8000">Local VM (127.0.0.1:8000)</option>
             <option value="lan_custom">Remote VM / Server IP...</option>
             <option value="cloud_custom">Custom Domain / FQDN...</option>
           </select>
@@ -188,7 +188,7 @@
           </div>
 
           <!-- TOP BAR OPEN MAIN SOC DASHBOARD BUTTON -->
-          <a href="http://80.225.207.171:8000/dashboard/index.html#/overview" target="_blank" id="linkNavMainDashboard" class="btn-primary btn-sm" style="gap:6px; font-weight:700;" title="Open Main SOC Dashboard">
+          <a href="http://127.0.0.1:8000/dashboard/index.html#/overview" target="_blank" id="linkNavMainDashboard" class="btn-primary btn-sm" style="gap:6px; font-weight:700;" title="Open Main SOC Dashboard">
             <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
             <span>Open Main SOC</span>
             <svg class="svg-icon svg-icon-sm" style="width:12px; height:12px;" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -391,7 +391,7 @@
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <span class="badge badge-teal" id="receiptFormatBadge">FORMAT: CEF</span>
                 <span class="badge badge-neutral" id="receiptShaBadge">SHA-256: e3b0c44...</span>
-                <a href="http://80.225.207.171:8000/dashboard/index.html#/logs" target="_blank" id="linkInspectOnServer" style="margin-left:auto; font-size:11.5px; color:var(--primary-main); text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                <a href="http://127.0.0.1:8000/dashboard/index.html#/logs" target="_blank" id="linkInspectOnServer" style="margin-left:auto; font-size:11.5px; color:var(--primary-main); text-decoration:none; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
                   <span>Inspect on Main SOC</span>
                   <svg class="svg-icon svg-icon-sm" style="width:12px; height:12px;" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </a>
@@ -830,7 +830,7 @@
                     <h3 class="section-title" style="font-size:14px;">Active Socket Probe Dispatcher</h3>
                     <p class="section-subtitle">Dispatch custom ICMP / TCP SYN / UDP datagram probes with instant round-trip measurement.</p>
                   </div>
-                  <span class="badge badge-cyan" id="radarTargetHostBadge">HOST: 80.225.207.171</span>
+                  <span class="badge badge-cyan" id="radarTargetHostBadge">HOST: 127.0.0.1</span>
                 </div>
 
                 <!-- Live Metrics Summary Bar -->
@@ -888,7 +888,7 @@
                     <span style="font-weight:700; font-size:12px; color:var(--accent-emerald);" id="probeReceiptTitle">Probe Handshake Verified</span>
                     <span class="mono" style="font-weight:800; font-size:12px; color:var(--text-primary);" id="probeReceiptRtt">0.8 ms RTT</span>
                   </div>
-                  <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-secondary); margin-top:2px;" id="probeReceiptDetail">Datagram 27 bytes dispatched to 80.225.207.171:5140</div>
+                  <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-secondary); margin-top:2px;" id="probeReceiptDetail">Datagram 27 bytes dispatched to 127.0.0.1:5140</div>
                 </div>
               </div>
             </div>
@@ -1065,7 +1065,7 @@
                 <button class="btn-teal btn-sm" onclick="window.sendGuideTestPayload('cisco')" style="font-size:11px; padding:3px 8px;">Transmit Sample</button>
               </div>
               <pre class="hardware-code-block" style="background:#060A14; color:#38BDF8; padding:12px; border-radius:8px; border:1px solid rgba(56,189,248,0.25); font-family:var(--font-mono); font-size:11.5px; line-height:1.5; max-height:110px; overflow-y:auto;"><span style="color:#00D084;">logging enable</span>
-<span style="color:#00D084;">logging host</span> outside <span style="color:#F59E0B;">80.225.207.171</span> <span style="color:#F8FAFC;">5140</span>
+<span style="color:#00D084;">logging host</span> outside <span style="color:#F59E0B;">127.0.0.1</span> <span style="color:#F8FAFC;">5140</span>
 <span style="color:#00D084;">logging trap</span> informational</pre>
             </div>
 
@@ -1076,7 +1076,7 @@
               </div>
               <pre class="hardware-code-block" style="background:#060A14; color:#38BDF8; padding:12px; border-radius:8px; border:1px solid rgba(56,189,248,0.25); font-family:var(--font-mono); font-size:11.5px; line-height:1.5; max-height:110px; overflow-y:auto;"><span style="color:#00D084;">config log syslogd setting</span>
   <span style="color:#00D084;">set status</span> enable
-  <span style="color:#00D084;">set server</span> "<span style="color:#F59E0B;">80.225.207.171</span>"
+  <span style="color:#00D084;">set server</span> "<span style="color:#F59E0B;">127.0.0.1</span>"
   <span style="color:#00D084;">set port</span> <span style="color:#F8FAFC;">5140</span>
   <span style="color:#00D084;">set format</span> cef
 <span style="color:#00D084;">end</span></pre>
@@ -1087,7 +1087,7 @@
                 <h3 style="font-size:13.5px; font-weight:800; color:var(--text-primary);">Linux rsyslog Daemon</h3>
                 <button class="btn-teal btn-sm" onclick="window.sendGuideTestPayload('linux')" style="font-size:11px; padding:3px 8px;">Transmit Sample</button>
               </div>
-              <pre class="hardware-code-block" style="background:#060A14; color:#38BDF8; padding:12px; border-radius:8px; border:1px solid rgba(56,189,248,0.25); font-family:var(--font-mono); font-size:11.5px; line-height:1.5; max-height:110px; overflow-y:auto;">*.* @<span style="color:#F59E0B;">80.225.207.171</span>:<span style="color:#F8FAFC;">5140</span>
+              <pre class="hardware-code-block" style="background:#060A14; color:#38BDF8; padding:12px; border-radius:8px; border:1px solid rgba(56,189,248,0.25); font-family:var(--font-mono); font-size:11.5px; line-height:1.5; max-height:110px; overflow-y:auto;">*.* @<span style="color:#F59E0B;">127.0.0.1</span>:<span style="color:#F8FAFC;">5140</span>
 <span style="color:#00D084;">sudo systemctl restart rsyslog</span></pre>
             </div>
 
@@ -1417,7 +1417,7 @@
       <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:18px;">
         <div>
           <label class="input-label">Target Host / IP</label>
-          <input type="text" id="modalTargetHost" class="input-field" value="80.225.207.171">
+          <input type="text" id="modalTargetHost" class="input-field" value="127.0.0.1">
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
           <div>

@@ -214,8 +214,8 @@ Set these in **Render Dashboard → Your Service → Environment**:
 
 Your app will be live at:
 ```
-https://ulpf-demo.onrender.com/dashboard/index.html
-https://ulpf-demo.onrender.com/docs
+http://localhost:8000/dashboard/index.html
+http://localhost:8000/docs
 ```
 
 >  Free tier sleeps after 15 minutes of inactivity. First request after sleep takes ~30 seconds to wake up.
