@@ -1047,6 +1047,13 @@ def get_metrics():
     parse_rate = round(((success_cnt or 0) / total_processed * 100), 1) if total_processed > 0 else 100.0
     tp_stats = global_throughput_monitor.get_stats()
 
+    merkle_vault_stats = {}
+    if hasattr(pipeline, "get_merkle_stats"):
+        try:
+            merkle_vault_stats = pipeline.get_merkle_stats() or {}
+        except Exception:
+            merkle_vault_stats = {}
+
     return {
         "status": "online",
         "database_connected": True,
@@ -1066,7 +1073,7 @@ def get_metrics():
         "latency_p50_us": tp_stats.get("latency_p50_us", 0.0),
         "latency_p95_us": tp_stats.get("latency_p95_us", 0.0),
         "latency_p99_us": tp_stats.get("latency_p99_us", 0.0),
-        "merkle_vault": pipeline.get_merkle_stats() if hasattr(pipeline, "get_merkle_stats") else {},
+        "merkle_vault": merkle_vault_stats,
         "engine_core": "Kosmoporos Integrated Engine",
         "active_sources": active_sources,
         "active_parsers": len(pipeline.registry.list_parsers()),
@@ -1078,7 +1085,10 @@ def get_metrics():
 def get_merkle_vault_status():
     """Return cryptographic Merkle Vault status (125 logs/block) and latest sealed root."""
     if hasattr(pipeline, "get_merkle_stats"):
-        return {"status": "success", "vault": pipeline.get_merkle_stats()}
+        try:
+            return {"status": "success", "vault": pipeline.get_merkle_stats()}
+        except Exception as e:
+            return {"status": "unsupported", "detail": str(e)}
     return {"status": "unsupported", "detail": "Merkle vault not initialized"}
 
 @router.get("/api/v1/merkle/vault/verify/{block_id}")

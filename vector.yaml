@@ -1,0 +1,38 @@
+# vector.yaml
+# High-speed Edge Broker configuration for Kosmoporos
+# Runs natively on the OS to catch UDP/TCP logs and batch-sends them to Redpanda/Kafka
+
+sources:
+  syslog_udp_in:
+    type: "syslog"
+    mode: "udp"
+    address: "0.0.0.0:5140"
+    max_length: 102400
+
+  syslog_tcp_in:
+    type: "syslog"
+    mode: "tcp"
+    address: "0.0.0.0:5141"
+    max_length: 102400
+
+transforms:
+  # Optional: Drop malformed or extremely noisy logs before they hit your pipeline
+  clean_logs:
+    type: "remap"
+    inputs: ["syslog_udp_in", "syslog_tcp_in"]
+    source: |
+      . = parse_syslog!(.message)
+      if contains(to_string(.message), "noisy_debug_pattern") {
+          abort
+      }
+
+sinks:
+  redpanda_out:
+    type: "kafka"
+    inputs: ["clean_logs"]
+    bootstrap_servers: "127.0.0.1:9092"
+    topic: "ulpf_ingress"
+    batch:
+      max_events: 5000       # Aggressive micro-batching
+      timeout_secs: 1.0      # Flush every second if batch isn't full
+    compression: "snappy"

@@ -1,0 +1,344 @@
+# ==============================================================================
+# ULPF (Universal Log Pre-processing Framework) Enterprise Production Stack
+# Production Microservices Architecture:
+#   - ulpf-api: FastAPI Unified SOC Ingestion Gateway (Port 8000, 5140/udp, 5141)
+#   - ulpf-worker: Scale-Out Distributed Log Streaming & Parsing Worker
+#   - redpanda: Ultra High-Throughput Event Streaming Bus (Kafka API, Port 9092)
+#   - redpanda-init: One-shot topic provisioner (creates ingress, normalized, alerts topics)
+#   - redpanda-console: Visual Event Stream, Partition & Topic Explorer (Port 8085)
+#   - redis: In-Memory High-Speed Cache, Rate Limiter & Message Broker (Port 6379)
+#   - minio: Immutable S3 Raw Evidence Storage & Forensics (Port 9000/9001)
+#   - opensearch: Normalized Analytics & Search Cluster (Port 9200)
+#   - opensearch-dashboards: SIEM Visualization Console (Port 5601, profile: analytics)
+#   - ulpf-ai: Sovereign Local LLM AI Engine (Ollama Qwen 7B, Port 11434, profile: ai)
+
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. ULPF Unified Ingestion Gateway & Dashboard (FastAPI Core)
+  # ----------------------------------------------------------------------------
+  ulpf-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ulpf-api
+    ports:
+      - "8000:8000"
+      - "5140:5140/udp"
+      - "5141:5141"
+    environment:
+      - ULPF_ENV=production
+      - ANYIO_MAX_THREADS=16
+      - ULPF_DEBUG=false
+      - ULPF_API_HOST=0.0.0.0
+      - ULPF_API_PORT=8000
+      - REDIS_ENABLED=true
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-ulpf_admin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-ulpf_password_2026}
+      - MINIO_BUCKET=${MINIO_BUCKET:-ulpf-raw}
+      - OPENSEARCH_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=ulpf-events
+      - REDPANDA_ENABLED=true
+      - REDPANDA_BROKERS=redpanda:9092
+      - REDPANDA_INPUT_TOPIC=ulpf-raw-ingress
+      - REDPANDA_OUTPUT_TOPIC=ulpf-events-normalized
+      - REDPANDA_ALERTS_TOPIC=ulpf-alerts
+      - REDPANDA_CONSUMER_GROUP=ulpf-workers
+      - REDPANDA_ADMIN_URL=http://redpanda:9644
+      - OLLAMA_URL=http://ulpf-ai:11434
+      - OLLAMA_MODEL=qwen2.5:7b
+      - STORAGE_DIR=/app/storage/raw
+      - DB_SQLITE_PATH=/app/storage/ulpf_metadata.db
+      - HF_TOKEN=${HF_TOKEN:-}
+    user: root
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ulpf_metadata:/app/storage
+      - ./ebpf_metrics.json:/app/ebpf_metrics.json:ro
+    depends_on:
+      minio:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - ulpf-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -s http://127.0.0.1:8000/api/v1/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 2. ULPF Distributed Worker Engine (Scale-Out Redpanda Consumer)
+  # ----------------------------------------------------------------------------
+  ulpf-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: ulpf-worker
+    environment:
+      - ULPF_ENV=production
+      - ANYIO_MAX_THREADS=16
+      - REDIS_ENABLED=true
+      - REDIS_URL=redis://redis:6379/0
+      - REDPANDA_ENABLED=true
+      - REDPANDA_BROKERS=redpanda:9092
+      - REDPANDA_INPUT_TOPIC=ulpf-raw-ingress
+      - REDPANDA_OUTPUT_TOPIC=ulpf-events-normalized
+      - REDPANDA_CONSUMER_GROUP=ulpf-workers
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-ulpf_admin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-ulpf_password_2026}
+      - MINIO_BUCKET=${MINIO_BUCKET:-ulpf-raw}
+      - OPENSEARCH_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=ulpf-events
+      - DB_SQLITE_PATH=/app/storage/ulpf_metadata.db
+    user: root
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ulpf_metadata:/app/storage
+    depends_on:
+      minio:
+        condition: service_started
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ulpf-net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 3. Redpanda — High-Speed Kafka Streaming Bus (~400MB RAM, C++ Raft)
+  # ----------------------------------------------------------------------------
+  redpanda:
+    image: redpandadata/redpanda:v23.3.14
+    container_name: ulpf-redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --memory
+      - "${REDPANDA_MEMORY:-1G}"
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://${OCI_PUBLIC_IP:-localhost}:19092
+      - --pandaproxy-addr
+      - internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr
+      - internal://redpanda:8082,external://${OCI_PUBLIC_IP:-localhost}:18082
+      - --schema-registry-addr
+      - internal://0.0.0.0:8081,external://0.0.0.0:18081
+    ports:
+      - "19092:19092"
+      - "9092:9092"
+      - "18082:18082"
+      - "8082:8082"
+      - "18081:18081"
+      - "8081:8081"
+      - "9644:9644"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    networks:
+      - ulpf-net
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 4. Redpanda Init — Automated Topic Provisioner (Runs on docker compose up)
+  # ----------------------------------------------------------------------------
+  redpanda-init:
+    image: redpandadata/redpanda:v23.3.14
+    container_name: ulpf-redpanda-init
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        rpk topic create ulpf-raw-ingress ulpf-events-normalized ulpf-alerts -p 3 -r 1 --brokers redpanda:9092 2>/dev/null || true
+        echo "Redpanda streaming topics verified."
+    networks:
+      - ulpf-net
+    restart: "no"
+
+  # ----------------------------------------------------------------------------
+  # 5. Redpanda Console — Visual Topic, Partition & Event Stream Explorer
+  # ----------------------------------------------------------------------------
+  redpanda-console:
+    image: redpandadata/console:v2.4.5
+    container_name: ulpf-redpanda-console
+    ports:
+      - "8085:8080"
+    environment:
+      - KAFKA_BROKERS=redpanda:9092
+      - KAFKA_SCHEMAREGISTRY_URLS=http://redpanda:8081
+      - REDPANDA_ADMINAPI_URLS=http://redpanda:9644
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    networks:
+      - ulpf-net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 6. Redis — High-Performance In-Memory Cache, Rate Limiter & Message Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: ulpf-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ulpf-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 7. MinIO — Immutable Raw Log S3 Object Storage (~150MB RAM)
+  # ----------------------------------------------------------------------------
+  minio:
+    image: alpine/minio:latest-release
+    container_name: ulpf-minio
+    user: root
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-ulpf_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-ulpf_password_2026}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - ulpf-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 8. OpenSearch — Normalized Search & Analytics Node (Configurable Heap)
+  # ----------------------------------------------------------------------------
+  opensearch:
+    image: opensearchproject/opensearch:2.11.1
+    container_name: ulpf-opensearch
+    environment:
+      - cluster.name=ulpf-cluster
+      - node.name=ulpf-node1
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}"
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - ulpf-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9200/_cluster/health | grep -E 'status.*(green|yellow)' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 9. OpenSearch Dashboards — Analytics & SIEM Console (Optional Profile: analytics)
+  # ----------------------------------------------------------------------------
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.1
+    container_name: ulpf-dashboards
+    profiles:
+      - analytics
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - ulpf-net
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # 10. Local AI / Ollama Engine (Optional Profile: ai)
+  # ----------------------------------------------------------------------------
+  ulpf-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.ai
+    container_name: ulpf-ai
+    profiles:
+      - ai
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    networks:
+      - ulpf-net
+    restart: unless-stopped
+
+
+volumes:
+  minio_data:
+    name: ulpf_minio_data
+  opensearch_data:
+    name: ulpf_opensearch_data
+  redpanda_data:
+    name: ulpf_redpanda_data
+  redis_data:
+    name: ulpf_redis_data
+  ulpf_metadata:
+    name: ulpf_metadata_store
+  ollama_storage:
+    name: ulpf_ollama_storage
+
+networks:
+  ulpf-net:
+    name: ulpf_network
+    driver: bridge

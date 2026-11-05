@@ -1,0 +1,29 @@
+# ==============================================================================
+# ULPF Distributed Worker Engine (Scale-Out Redpanda Consumer)
+# ==============================================================================
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app/main:/app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Deterministic UID/GID 10001 matching ulpf-api for shared volume permission consistency
+RUN groupadd -r -g 10001 ulpfgroup && useradd -r -u 10001 -g ulpfgroup -d /app -s /sbin/nologin ulpfuser
+RUN mkdir -p /app/storage/raw /app/storage/logs && chown -R ulpfuser:ulpfgroup /app
+
+COPY --chown=ulpfuser:ulpfgroup . .
+
+USER ulpfuser
+
+CMD ["python", "-m", "scripts.run_worker"]
