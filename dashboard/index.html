@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kosmoporos — Universal Log Pre-processing Framework</title>
+  <link rel="icon" type="image/png" href="logo_icon.png">
+  <link rel="stylesheet" href="style.css?v=1.0.9_phase13">
+  <!-- Google Fonts Syne, Space Grotesk, Plus Jakarta Sans, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem("ulpf_theme") || "luxury";
+        const normalized = (saved === "light" || saved === "dark") ? saved : "luxury";
+        document.documentElement.setAttribute("data-theme", normalized);
+      } catch (e) {}
+    })();
+  </script>
+  <!-- Chart.js for continuous telemetry graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="app-layout">
+    <!-- PERSISTENT LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header" style="padding: 14px 12px 12px 12px;">
+        <div class="brand-logo" style="display:flex; align-items:center; width:100%; gap:8px; min-width:0;">
+          <img src="logo.png" alt="Kosmoporos" class="brand-icon-img" style="width:40%; max-height:72px; object-fit:contain; border-radius:12px; background:#ffffff; padding:0px 0px; box-shadow:0 4px 18px rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.25); flex-shrink:0;">
+          <div style="flex:1; min-width:0; overflow:hidden;">
+            <div class="brand-title" style="font-size:14.5px; font-weight:800; letter-spacing:-0.4px; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Kosmoporos</div>
+            <div class="brand-sub" style="font-size:8.5px; color:var(--primary-main); font-weight:700; letter-spacing:0.3px; text-transform:uppercase; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Universal Log Framework</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- SERVER OPERATIONS -->
+        <div class="nav-section-title">SERVER INTERFACE</div>
+        <a href="#/overview" class="nav-item active" data-route="overview">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          </span>
+          <span class="nav-label">Overview Dashboard</span>
+        </a>
+
+        <a href="#/connections" class="nav-item" data-route="connections">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+          </span>
+          <span class="nav-label">IP Addresses & Connections</span>
+        </a>
+
+        <a href="#/logs" class="nav-item" data-route="logs">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <span class="nav-label">Logs & Raw Evidence</span>
+        </a>
+
+        <a href="#/reports" class="nav-item" data-route="reports">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          </span>
+          <span class="nav-label">Reports & Audits</span>
+        </a>
+
+        <a href="#/analytics" class="nav-item" data-route="analytics">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
+          </span>
+          <span class="nav-label">Analytics Studio</span>
+        </a>
+
+        <a href="#/human-verification" class="nav-item" data-route="human-verification">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <span class="nav-label">Human Verification</span>
+          <span class="nav-badge" id="sidebarUnknownCountBadge" style="font-size: 10px; padding: 1px 6px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; color: #f59e0b; margin-left: auto; font-family: var(--font-mono); font-weight: 700;">4</span>
+        </a>
+
+        <a href="#/settings" class="nav-item" data-route="settings">
+          <span class="nav-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
+          <span class="nav-label">Server Settings & System</span>
+        </a>
+
+      </nav>
+
+
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-wrapper">
+      <!-- TOP CONTROL BAR -->
+      <header class="top-bar">
+        <div class="top-search-container">
+          <span class="search-icon">
+            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <input type="text" id="globalSearchInput" placeholder="Search by Event ID, IP, SHA-256, Vendor, Raw text..." />
+        </div>
+        <div class="top-bar-controls">
+
+          <div class="theme-selector-wrap" style="display:flex; align-items:center; gap:6px;">
+            <select id="themeSelector" class="theme-select-btn" title="Switch SOC Theme (Dark / Light / Luxury)">
+              <option value="dark" selected>Dark (Emerald Glow)</option>
+              <option value="light">Light (Crystal Glass)</option>
+              <option value="luxury">Luxury (Champagne Gold)</option>
+            </select>
+          </div>
+          <a href="#/human-verification" class="btn btn-sm btn-secondary" style="text-decoration: none; border-color: rgba(56, 189, 248, 0.35); color: var(--amber-main);" title="Human Verification Review Queue">
+            <span>Human Review</span>
+            <span id="topBarUnknownBadge" style="background: rgba(56, 189, 248, 0.2); color: var(--primary-main); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-family: var(--font-mono); font-size: 11px;">4</span>
+          </a>
+
+          <a href="https://ulpf-new.onrender.com/" target="_blank" class="btn btn-sm btn-secondary" style="text-decoration: none; border-color: rgba(56, 189, 248, 0.35); color: var(--primary-main);" title="Open Virtual Testing Web Studio">
+            <span>Testing Studio</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- DYNAMIC ROUTE CONTAINER -->
+      <div id="contentArea" class="content-area">
+        <!-- Views rendered dynamically via app.js -->
+      </div>
+    </main>
+  </div>
+
+  <!-- EVENT INVESTIGATION DETAIL MODAL -->
+  <div id="eventDetailModal" class="modal-overlay hidden">
+    <div class="modal-card full-modal">
+      <div class="modal-header">
+        <div class="modal-header-nav">
+          <button id="btnModalBackToDash" class="btn btn-xs btn-secondary" onclick="document.getElementById('eventDetailModal').classList.add('hidden')">
+            <svg class="svg-icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back to Dashboard</span>
+          </button>
+          <div class="modal-title-row">
+            <h2 id="modalEventIdTitle">ULPF-2026-0000</h2>
+            <span id="modalEventStatusBadge" class="badge badge-teal">SUCCESS</span>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-xs btn-secondary" onclick="window.exportCurrentEventJson()" title="Download this specific event as a single JSON file">
+            Export JSON
+          </button>
+          <span class="text-xs text-muted" style="display: inline-block;">ESC or click outside to close</span>
+          <button id="closeEventModal" class="btn-close" style="font-size: 20px; line-height: 1;">&times;</button>
+        </div>
+      </div>
+
+      <!-- MODAL TABS -->
+      <div class="modal-tabs" id="modalTabHeader">
+        <button class="tab-btn active" data-tab="tabOverview">Overview</button>
+        <button class="tab-btn" data-tab="tabRaw">Raw Log</button>
+        <button class="tab-btn" data-tab="tabDetection">Format Detection</button>
+        <button class="tab-btn" data-tab="tabParsed">Parsed Fields</button>
+        <button class="tab-btn" data-tab="tabIr">ULPF-IR</button>
+        <button class="tab-btn" data-tab="tabNormalization">Normalization</button>
+        <button class="tab-btn" data-tab="tabValidation">Validation</button>
+        <button class="tab-btn" data-tab="tabProvenance">Provenance</button>
+        <button class="tab-btn" data-tab="tabOcsfEcs">OCSF / ECS</button>
+        <button class="tab-btn" data-tab="tabExport">Export Status</button>
+        <button class="tab-btn" data-tab="tabTimeline">Timeline</button>
+      </div>
+
+      <!-- TAB CONTENT PANELS -->
+      <div class="modal-body">
+        <!-- Overview Tab -->
+        <div id="tabOverview" class="tab-pane active">
+          <div class="grid grid-3 gap-md" id="modalOverviewGrid"></div>
+        </div>
+
+        <!-- Raw Log Tab -->
+        <div id="tabRaw" class="tab-pane">
+          <div class="code-box-header">
+            <span>Raw Immutable Message String</span>
+            <span id="modalRawSha" class="mono text-muted">SHA-256: ---</span>
+          </div>
+          <pre id="modalRawCode" class="code-box"></pre>
+        </div>
+
+        <!-- Format Detection Tab -->
+        <div id="tabDetection" class="tab-pane">
+          <div class="card p-md">
+            <h3>Format Detection Results</h3>
+            <table class="table-dense mt-sm" id="modalDetectionTable"></table>
+          </div>
+        </div>
+
+        <!-- Parsed Fields Tab -->
+        <div id="tabParsed" class="tab-pane">
+          <div class="card p-md">
+            <h3>Extracted Raw Key-Value Pairs</h3>
+            <table class="table-dense mt-sm" id="modalParsedTable"></table>
+          </div>
+        </div>
+
+        <!-- ULPF-IR Tab -->
+        <div id="tabIr" class="tab-pane">
+          <div class="card p-md">
+            <div class="flex-between">
+              <h3>Canonical ULPF-IR Representation</h3>
+              <span class="badge badge-neutral">ULPF-IR v1.0 Schema</span>
+            </div>
+            <pre id="modalIrCode" class="code-box mt-sm"></pre>
+          </div>
+        </div>
+
+        <!-- Normalization Tab -->
+        <div id="tabNormalization" class="tab-pane">
+          <div class="card p-md">
+            <h3>Vendor Field to Canonical ULPF Mapping</h3>
+            <table class="table-dense mt-sm" id="modalNormTable"></table>
+          </div>
+        </div>
+
+        <!-- Validation Tab -->
+        <div id="tabValidation" class="tab-pane">
+          <div class="card p-md">
+            <h3>Security & Schema Validation Matrix</h3>
+            <table class="table-dense mt-sm" id="modalValidationTable"></table>
+          </div>
+        </div>
+
+        <!-- Provenance Tab -->
+        <div id="tabProvenance" class="tab-pane">
+          <div class="card p-md">
+            <h3>Field-Level Provenance & Attribution</h3>
+            <table class="table-dense mt-sm" id="modalProvenanceTable"></table>
+          </div>
+        </div>
+
+        <!-- OCSF / ECS Tab -->
+        <div id="tabOcsfEcs" class="tab-pane">
+          <div class="grid grid-2 gap-md">
+            <div>
+              <h3>OCSF Export Payload (v1.1.0)</h3>
+              <pre id="modalOcsfCode" class="code-box mt-sm"></pre>
+            </div>
+            <div>
+              <h3>Elastic Common Schema Export (v8.x)</h3>
+              <pre id="modalEcsCode" class="code-box mt-sm"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export Status Tab -->
+        <div id="tabExport" class="tab-pane">
+          <div class="card p-md">
+            <h3>Downstream Delivery Sink Destinations</h3>
+            <table class="table-dense mt-sm" id="modalExportTable"></table>
+          </div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div id="tabTimeline" class="tab-pane">
+          <div class="card p-md">
+            <h3>Processing Lifecycle Timeline</h3>
+            <div class="timeline-container mt-md" id="modalTimelineList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI REVIEW DEDICATED POPUP MODAL -->
+  <div id="aiReviewPopupModal" class="modal-overlay hidden">
+    <div class="modal-card" style="max-width: 720px; width: 92%; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div class="modal-header-nav">
+          <div class="modal-title-row">
+            <h2 id="aiReviewModalTitle" style="font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+              <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>SOVEREIGN AI INCIDENT ASSESSMENT</span>
+            </h2>
+            <span id="aiReviewModalBadge" class="badge badge-teal">CONFIDENCE: 95.0%</span>
+          </div>
+        </div>
+        <button id="closeAiReviewModal" class="btn-close" onclick="document.getElementById('aiReviewPopupModal').classList.add('hidden')" style="font-size: 20px; line-height: 1;">&times;</button>
+      </div>
+      <div class="modal-body" id="aiReviewModalBody" style="overflow-y: auto; padding: 20px;">
+        <!-- Injected dynamically via explainSpecificThreat -->
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 8px; background: var(--bg-card-subtle);">
+        <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('aiReviewPopupModal').classList.add('hidden')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEDICATED HIGH-RESOLUTION PRINTABLE REPORT CONTAINER FOR PDF DOWNLOAD -->
+  <div id="printableReportContainer"></div>
+
+  <!-- DEMO TOUR DOCK -->
+  <div id="demoExplanationDock" class="modal-overlay hidden" style="align-items: flex-end; padding-bottom: 20px;">
+    <div class="modal-card" style="width: 600px; max-width: 90%; background: var(--bg-card); border: 1px solid var(--primary-main); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding: 12px 20px;">
+        <h3 style="margin: 0; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--primary-main);"></span> <span id="tourStepTitle">Demo Tour</span>
+        </h3>
+        <button id="btnCloseDemoTour" class="btn-close" style="font-size: 20px;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; font-size: 14px; line-height: 1.6; color: var(--text-muted);" id="tourStepContent">
+        Welcome to the ULPF SIH Demo Tour.
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+        <button id="btnTourAutoPlay" class="btn btn-sm btn-secondary"> Auto-Play</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="btnTourPrev" class="btn btn-sm btn-secondary">Previous</button>
+          <button id="btnTourAction" class="btn btn-sm btn-primary">Try it</button>
+          <button id="btnTourNext" class="btn btn-sm btn-secondary">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=1.0.9_phase13"></script>
+</body>
+</html>
