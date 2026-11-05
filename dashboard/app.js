@@ -319,14 +319,14 @@
               refreshEventsTable();
             }
           }
-          
+
           if (payload.type === "TAMPER_DETECTED") {
             showToast(`CRITICAL: Cryptographic Tampering Detected! Data modified bypassing API.`, "error");
             if (payload.data) {
-                state.unknownLogs.unshift(payload.data);
-                if (state.currentRoute === "human-verification") {
-                  renderHumanVerificationView(document.getElementById("contentArea"));
-                }
+              state.unknownLogs.unshift(payload.data);
+              if (state.currentRoute === "human-verification") {
+                renderHumanVerificationView(document.getElementById("contentArea"));
+              }
             }
           }
 
@@ -362,14 +362,14 @@
           if (payload.type === "NEW_EVENT" && payload.data) {
             const rec = payload.data;
             recordIncomingEventTimestamp();
-            
-            const exists = state.events.some(e => 
-              (e.event_id && e.event_id === rec.event_id) || 
+
+            const exists = state.events.some(e =>
+              (e.event_id && e.event_id === rec.event_id) ||
               (e.raw_event_id && e.raw_event_id === rec.raw_event_id) ||
               (e.id && e.id === rec.id) ||
               (e.raw_message && e.raw_message === rec.raw_message && e.timestamp === rec.timestamp)
             );
-            
+
             if (!exists) {
               state.events.unshift(rec);
               if (state.events.length > 1000) state.events.pop();
@@ -411,12 +411,12 @@
         }
         evtSource.close();
         if (window.sseReconnectTimeout) clearTimeout(window.sseReconnectTimeout);
-        
+
         window.sseReconnectDelay = window.sseReconnectDelay ? Math.min(window.sseReconnectDelay * 2, 30000) : 3000;
         console.warn(`SSE connection dropped. Reconnecting in ${window.sseReconnectDelay}ms...`);
-        
+
         window.sseReconnectTimeout = setTimeout(() => {
-            initSseStream();
+          initSseStream();
         }, window.sseReconnectDelay);
       };
     } catch (err) {
@@ -452,7 +452,7 @@
 
   function getFormatDistributionCounts() {
     const counts = { CEF: 0, Syslog: 0, LEEF: 0, JSON: 0, "PAN-OS": 0, Other: 0 };
-    
+
     // Check server metrics format_distribution
     const serverDist = state.metrics?.format_distribution;
     if (serverDist && typeof serverDist === "object" && Object.keys(serverDist).length > 0) {
@@ -467,7 +467,7 @@
         else counts.Other += num;
       }
     }
-    
+
     // If server format_distribution is empty, extract from state.events
     const hasServerData = Object.values(counts).some(v => v > 0);
     if (!hasServerData && state.events && state.events.length > 0) {
@@ -893,7 +893,7 @@
               <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; max-width:100%;">
                 <span class="mono" style="font-size:11.5px; color:var(--silver-light); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(e.src_ip || 'N/A')}">${escapeHtml(e.src_ip || "N/A")}</span>
                 ${e.src_ip && e.src_ip !== "N/A" ? (
-                  isIpBlocked ? `
+            isIpBlocked ? `
                   <button class="btn-unblock-ip" onclick="event.stopPropagation(); window.toggleBlockIp('${e.src_ip}')" title="Unblock this IP" style="padding:2px 6px; font-size:10px; white-space:nowrap; flex-shrink:0;">
                     Blacklisted
                   </button>
@@ -904,7 +904,7 @@
                     Block
                   </button>
                 `)
-                ) : ''}
+          ) : ''}
               </div>
             </td>
             <td style="text-align:center; vertical-align:middle; padding:10px 14px;">
@@ -1023,69 +1023,69 @@
   }
 
   window.renderJsonTree = function renderJsonTree(obj) {
-      if (typeof obj !== 'object' || obj === null) {
-        let valStr = String(obj);
-        let typeClass = typeof obj === 'boolean' ? 'parsed-val-bool' : (typeof obj === 'number' ? 'parsed-val-num' : 'parsed-val-str');
-        return `<span class="parsed-value-interactive ${typeClass}" data-val="${valStr.replace(/"/g, '&quot;')}" style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;" title="Click to locate in raw log">${valStr}</span>`;
-      }
-      if (Array.isArray(obj) && obj.length === 0) return '[]';
-      if (Object.keys(obj).length === 0) return '{}';
+    if (typeof obj !== 'object' || obj === null) {
+      let valStr = String(obj);
+      let typeClass = typeof obj === 'boolean' ? 'parsed-val-bool' : (typeof obj === 'number' ? 'parsed-val-num' : 'parsed-val-str');
+      return `<span class="parsed-value-interactive ${typeClass}" data-val="${valStr.replace(/"/g, '&quot;')}" style="cursor:pointer; text-decoration:underline; text-decoration-style:dotted;" title="Click to locate in raw log">${valStr}</span>`;
+    }
+    if (Array.isArray(obj) && obj.length === 0) return '[]';
+    if (Object.keys(obj).length === 0) return '{}';
 
-      let html = '<div style="margin-left:12px; border-left:1px solid var(--border-color); padding-left:8px;">';
-      for (const key in obj) {
-        html += `<div style="margin-bottom:4px;">
+    let html = '<div style="margin-left:12px; border-left:1px solid var(--border-color); padding-left:8px;">';
+    for (const key in obj) {
+      html += `<div style="margin-bottom:4px;">
                    <strong class="parsed-key">${key}:</strong> 
                    ${renderJsonTree(obj[key])}
                  </div>`;
-      }
-      html += '</div>';
-      return html;
+    }
+    html += '</div>';
+    return html;
   };
 
-  window.renderRawBlocks = function(text) {
-      if (!text) return "N/A";
-      try {
-        const j = JSON.parse(text);
-        return renderJsonTree(j);
-      } catch (e) {
-        const parts = text.split(/(?=\b\w+=)|\|/g); 
-        let html = '<div style="display:flex; flex-wrap:wrap; gap:6px; font-family:\'JetBrains Mono\', monospace; font-size:12px;">';
-        parts.forEach(p => {
-           let pt = p.trim();
-           if (pt) {
-              let bg = "rgba(148, 163, 184, 0.1)";
-              let color = "var(--text-main)";
-              let border = "rgba(148,163,184,0.2)";
-              if (pt.includes('=')) {
-                 const idx = pt.indexOf('=');
-                 const k = pt.substring(0, idx);
-                 const v = pt.substring(idx + 1);
-                 let kLower = k.toLowerCase();
-                 if (['src', 'dst', 'ip', 'source', 'destination', 'spt', 'dpt', 'port'].includes(kLower)) {
-                     bg = "rgba(16, 185, 129, 0.1)"; color = "var(--success-main)"; border = "rgba(16,185,129,0.3)";
-                 } else if (['act', 'action', 'reason', 'signature', 'threat'].includes(kLower)) {
-                     if (['deny', 'drop', 'block'].includes(v.toLowerCase())) {
-                         bg = "rgba(239, 68, 68, 0.1)"; color = "var(--danger-main)"; border = "rgba(239,68,68,0.3)";
-                     } else {
-                         bg = "rgba(245, 158, 11, 0.1)"; color = "var(--warning-main)"; border = "rgba(245,158,11,0.3)";
-                     }
-                 } else if (['proto', 'app', 'transport', 'protocol'].includes(kLower)) {
-                     bg = "rgba(139, 92, 246, 0.1)"; color = "var(--violet-main)"; border = "rgba(139,92,246,0.3)";
-                 } else {
-                     bg = "rgba(56, 189, 248, 0.1)"; color = "var(--primary-main)"; border = "rgba(56,189,248,0.3)";
-                 }
-                 html += `<span style="background:${bg}; color:${color}; padding: 4px 8px; border-radius: 4px; border: 1px solid ${border}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"><strong>${k}=</strong>${v}</span>`;
+  window.renderRawBlocks = function (text) {
+    if (!text) return "N/A";
+    try {
+      const j = JSON.parse(text);
+      return renderJsonTree(j);
+    } catch (e) {
+      const parts = text.split(/(?=\b\w+=)|\|/g);
+      let html = '<div style="display:flex; flex-wrap:wrap; gap:6px; font-family:\'JetBrains Mono\', monospace; font-size:12px;">';
+      parts.forEach(p => {
+        let pt = p.trim();
+        if (pt) {
+          let bg = "rgba(148, 163, 184, 0.1)";
+          let color = "var(--text-main)";
+          let border = "rgba(148,163,184,0.2)";
+          if (pt.includes('=')) {
+            const idx = pt.indexOf('=');
+            const k = pt.substring(0, idx);
+            const v = pt.substring(idx + 1);
+            let kLower = k.toLowerCase();
+            if (['src', 'dst', 'ip', 'source', 'destination', 'spt', 'dpt', 'port'].includes(kLower)) {
+              bg = "rgba(16, 185, 129, 0.1)"; color = "var(--success-main)"; border = "rgba(16,185,129,0.3)";
+            } else if (['act', 'action', 'reason', 'signature', 'threat'].includes(kLower)) {
+              if (['deny', 'drop', 'block'].includes(v.toLowerCase())) {
+                bg = "rgba(239, 68, 68, 0.1)"; color = "var(--danger-main)"; border = "rgba(239,68,68,0.3)";
               } else {
-                 if (pt.startsWith("CEF:") || pt.startsWith("<")) {
-                     bg = "rgba(99, 102, 241, 0.1)"; color = "#818cf8"; border = "rgba(99, 102, 241, 0.3)";
-                 }
-                 html += `<span style="background:${bg}; color:${color}; padding: 4px 8px; border-radius: 4px; border: 1px dashed ${border};">${pt}</span>`;
+                bg = "rgba(245, 158, 11, 0.1)"; color = "var(--warning-main)"; border = "rgba(245,158,11,0.3)";
               }
-           }
-        });
-        html += '</div>';
-        return html;
-      }
+            } else if (['proto', 'app', 'transport', 'protocol'].includes(kLower)) {
+              bg = "rgba(139, 92, 246, 0.1)"; color = "var(--violet-main)"; border = "rgba(139,92,246,0.3)";
+            } else {
+              bg = "rgba(56, 189, 248, 0.1)"; color = "var(--primary-main)"; border = "rgba(56,189,248,0.3)";
+            }
+            html += `<span style="background:${bg}; color:${color}; padding: 4px 8px; border-radius: 4px; border: 1px solid ${border}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"><strong>${k}=</strong>${v}</span>`;
+          } else {
+            if (pt.startsWith("CEF:") || pt.startsWith("<")) {
+              bg = "rgba(99, 102, 241, 0.1)"; color = "#818cf8"; border = "rgba(99, 102, 241, 0.3)";
+            }
+            html += `<span style="background:${bg}; color:${color}; padding: 4px 8px; border-radius: 4px; border: 1px dashed ${border};">${pt}</span>`;
+          }
+        }
+      });
+      html += '</div>';
+      return html;
+    }
   };
 
   window.openEventDetailModal = async function openEventDetailModal(eventId, forceEv = null) {
@@ -1133,10 +1133,10 @@
     }
 
     if (forceEv) {
-        state.selectedEvent = forceEv;
-        renderEventModalContent(forceEv, eventId);
-        modal.classList.remove("hidden");
-        return;
+      state.selectedEvent = forceEv;
+      renderEventModalContent(forceEv, eventId);
+      modal.classList.remove("hidden");
+      return;
     }
 
     try {
@@ -1232,7 +1232,7 @@
           <div class="mono font-bold mt-sm flex-between">
             <span>${srcIp} -> ${dstIp}</span>
             ${srcIp && srcIp !== "N/A" ? (
-              isIpBlocked ? `
+          isIpBlocked ? `
                 <button class="btn-unblock-ip" onclick="window.toggleBlockIp('${srcIp}')">
                   Blacklisted
                 </button>
@@ -1243,7 +1243,7 @@
                   Block IP
                 </button>
               `)
-            ) : ''}
+        ) : ''}
           </div>
           ${(ev.source?.mac || ev.network?.ssid) ? `
             <div class="mono text-xs text-muted mt-xs" style="margin-top:6px; font-size:11.5px;">
@@ -1369,11 +1369,11 @@
     const rawCode = document.getElementById("modalRawCode");
     const rawSha = document.getElementById("modalRawSha");
     if (rawCode) {
-       if (orig.raw_evidence || orig.message || orig.raw_log || orig.raw) {
-          rawCode.innerHTML = window.renderRawBlocks(orig.raw_evidence || orig.message || orig.raw_log || orig.raw);
-       } else {
-          rawCode.innerText = "N/A";
-       }
+      if (orig.raw_evidence || orig.message || orig.raw_log || orig.raw) {
+        rawCode.innerHTML = window.renderRawBlocks(orig.raw_evidence || orig.message || orig.raw_log || orig.raw);
+      } else {
+        rawCode.innerText = "N/A";
+      }
     }
     if (rawSha) rawSha.innerText = `SHA-256: ${orig.sha256 || "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}`;
 
@@ -1563,7 +1563,7 @@
         ]).map(act => `<li>${escapeHtml(act)}</li>`).join('')}
             </ul>
             ${srcIp && srcIp !== 'N/A' && srcIp !== 'Unknown' ? (
-              isIpBlocked ? `
+          isIpBlocked ? `
                 <div class="mt-sm">
                   <button class="btn-unblock-ip" style="font-size:11px;" onclick="window.toggleBlockIp('${srcIp}')">
                     Blacklisted at Gateway
@@ -1580,7 +1580,7 @@
                   </button>
                 </div>
               `)
-            ) : ''}
+        ) : ''}
           </div>
         </div>
       `;
@@ -3462,14 +3462,14 @@ New-NetFirewallRule -DisplayName "ULPF Ingress TCP" -Direction Inbound -LocalPor
   // ==========================================================================
   // HUMAN VERIFICATION & AI PARSER REVIEW QUEUE
   // ==========================================================================
-  window.acknowledgeTamper = function(alertId) {
-     const idx = state.unknownLogs.findIndex(u => u.id === alertId);
-     if (idx > -1) {
-        state.unknownLogs.splice(idx, 1);
-        state.selectedUnknownLog = null;
-        renderHumanVerificationView(document.getElementById("mainContent"));
-        window.showToast("Tamper alert acknowledged and isolated.", "success");
-     }
+  window.acknowledgeTamper = function (alertId) {
+    const idx = state.unknownLogs.findIndex(u => u.id === alertId);
+    if (idx > -1) {
+      state.unknownLogs.splice(idx, 1);
+      state.selectedUnknownLog = null;
+      renderHumanVerificationView(document.getElementById("mainContent"));
+      window.showToast("Tamper alert acknowledged and isolated.", "success");
+    }
   };
 
   async function renderHumanVerificationView(container) {
@@ -3522,7 +3522,7 @@ New-NetFirewallRule -DisplayName "ULPF Ingress TCP" -Direction Inbound -LocalPor
             ${state.unknownLogs.map((u) => {
       const isActive = selectedLog && selectedLog.id === u.id;
       if (u.is_tamper_alert) {
-          return `
+        return `
                 <div class="unknown-item-card ${isActive ? 'active' : ''}" style="border-left: 4px solid var(--danger-main); background: rgba(239,68,68,0.05);" onclick="window.selectUnknownLog('${u.id}')">
                   <div class="flex-between">
                     <strong class="mono" style="color:var(--danger-main); font-size:12px;">${u.id}</strong>
@@ -3537,7 +3537,7 @@ New-NetFirewallRule -DisplayName "ULPF Ingress TCP" -Direction Inbound -LocalPor
                 </div>
               `;
       } else {
-          return `
+        return `
                 <div class="unknown-item-card ${isActive ? 'active' : ''}" onclick="window.selectUnknownLog('${u.id}')">
                   <div class="flex-between">
                     <strong class="mono" style="color:var(--text-main); font-size:12px;">${u.id}</strong>
@@ -3733,35 +3733,35 @@ New-NetFirewallRule -DisplayName "ULPF Ingress TCP" -Direction Inbound -LocalPor
     if (btnAiSynth) {
       btnAiSynth.addEventListener("click", async () => {
         if (!state.selectedUnknownLog) return;
-        
+
         btnAiSynth.disabled = true;
         btnAiSynth.innerHTML = '<span>Analyzing...</span>';
         showToast("Air-Gapped SLM (Qwen2.5-Coder) analyzing byte syntax...", "info");
-        
+
         try {
           const res = await fetch("/api/v1/ai/onboard", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ samples: [state.selectedUnknownLog.raw_message] })
           });
-          
+
           if (res.ok) {
             const data = await res.json();
             const score = data.confidence ? Math.round(data.confidence * 100) : 95;
             showToast(`AI Parser Spec synthesized with ${score}% confidence score!`, "success");
-            
+
             // Auto-refresh the log list (assume it may be resolved)
             setTimeout(() => {
-                fetchUnknownLogs();
+              fetchUnknownLogs();
             }, 1500);
           } else {
-             showToast("Failed to synthesize AI parser spec from server.", "error");
+            showToast("Failed to synthesize AI parser spec from server.", "error");
           }
         } catch (e) {
-            showToast("Network error during AI synthesis.", "error");
+          showToast("Network error during AI synthesis.", "error");
         } finally {
-            btnAiSynth.disabled = false;
-            btnAiSynth.innerHTML = '<span>Re-Synthesize AI Parser</span>';
+          btnAiSynth.disabled = false;
+          btnAiSynth.innerHTML = '<span>Re-Synthesize AI Parser</span>';
         }
       });
     }
@@ -4702,8 +4702,8 @@ normalization:
               <tr><th>Audit Timestamp</th><th>Event Target</th><th>Algorithm</th><th>Audit Result</th></tr>
             </thead>
             <tbody>
-              ${filteredList.length === 0 ? `<tr><td colspan="4" class="text-center text-muted" style="padding:16px;">No audit evidence available</td></tr>` : 
-                filteredList.slice(0, 8).map(evt => `
+              ${filteredList.length === 0 ? `<tr><td colspan="4" class="text-center text-muted" style="padding:16px;">No audit evidence available</td></tr>` :
+        filteredList.slice(0, 8).map(evt => `
                   <tr>
                     <td class="mono">${new Date(evt.timestamp || evt.ingested_at || Date.now()).toISOString().replace('T', ' ').substr(0, 19)}</td>
                     <td class="mono">${evt.event_id || 'UNKNOWN'}</td>
@@ -5034,7 +5034,7 @@ normalization:
     const popupModal = document.getElementById("aiReviewPopupModal");
     const bodyEl = document.getElementById("aiReviewModalBody");
     const badgeEl = document.getElementById("aiReviewModalBadge");
-    
+
     if (popupModal) {
       popupModal.classList.remove("hidden");
     }
@@ -5043,7 +5043,7 @@ normalization:
       badgeEl.className = "badge badge-amber";
       badgeEl.innerText = "REASONING...";
     }
-    
+
     if (bodyEl) {
       bodyEl.innerHTML = `
         <div style="padding:24px; text-align:center; color:var(--text-main);">
@@ -5106,10 +5106,10 @@ normalization:
                 <div style="font-weight:700; font-size:12px; color:var(--success-main); text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Recommended SOC Containment</div>
                 <ul style="padding-left:18px; font-size:12px; color:var(--text-main); line-height:1.6; margin:0;">
                   ${(data.recommended_actions || [
-                    "Verify source IP against perimeter firewall blacklist.",
-                    "Enforce automated connection drop at security gateway.",
-                    "Validate legal raw SHA-256 evidence chain in MinIO vault."
-                  ]).map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+            "Verify source IP against perimeter firewall blacklist.",
+            "Enforce automated connection drop at security gateway.",
+            "Validate legal raw SHA-256 evidence chain in MinIO vault."
+          ]).map(a => `<li>${escapeHtml(a)}</li>`).join('')}
                 </ul>
               </div>
             </div>
@@ -5156,31 +5156,31 @@ normalization:
       btnEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Verifying...';
       const res = await fetch(`/api/v1/ai/reanalyze-threat/${encodeURIComponent(eventId)}`, { method: "POST" });
       const data = await res.json();
-      
+
       if (res.ok && data.status === "success") {
         if (!data.result.is_threat) {
           btnEl.innerHTML = ' False Positive';
           btnEl.className = 'btn btn-sm btn-teal';
           const row = document.getElementById(`toaster-log-${eventId}`);
           if (row) {
-             row.style.opacity = '0.5';
-             const reasonEl = document.createElement('div');
-             reasonEl.style.cssText = 'color: var(--success-main); font-size: 11px; margin-top: 4px;';
-             reasonEl.innerText = `Downgraded: ${data.result.reasoning}`;
-             row.appendChild(reasonEl);
-             if (window.fetchMetrics) {
-                 window.fetchMetrics();
-             }
+            row.style.opacity = '0.5';
+            const reasonEl = document.createElement('div');
+            reasonEl.style.cssText = 'color: var(--success-main); font-size: 11px; margin-top: 4px;';
+            reasonEl.innerText = `Downgraded: ${data.result.reasoning}`;
+            row.appendChild(reasonEl);
+            if (window.fetchMetrics) {
+              window.fetchMetrics();
+            }
           }
         } else {
           btnEl.innerHTML = ' Verified Threat';
           btnEl.className = 'btn btn-sm btn-danger';
           const row = document.getElementById(`toaster-log-${eventId}`);
           if (row) {
-             const reasonEl = document.createElement('div');
-             reasonEl.style.cssText = 'color: var(--danger-main); font-size: 11px; margin-top: 4px;';
-             reasonEl.innerText = `AI Confirmed: ${data.result.reasoning}`;
-             row.appendChild(reasonEl);
+            const reasonEl = document.createElement('div');
+            reasonEl.style.cssText = 'color: var(--danger-main); font-size: 11px; margin-top: 4px;';
+            reasonEl.innerText = `AI Confirmed: ${data.result.reasoning}`;
+            row.appendChild(reasonEl);
           }
         }
       } else {
@@ -5194,10 +5194,10 @@ normalization:
 
   window.openThreatToaster = (formatLabel) => {
     window.closeThreatToaster();
-    
+
     // Find logs matching this format that are threats
-    const formatThreatsRaw = state.events.filter(ev => 
-      ev.format === formatLabel && 
+    const formatThreatsRaw = state.events.filter(ev =>
+      ev.format === formatLabel &&
       (ev.threat || ev.action === "deny" || ev.action === "block" || ev.status === "blocked")
     );
     const formatThreats = [];
@@ -5209,7 +5209,7 @@ normalization:
         formatThreats.push(ev);
       }
     }
-    
+
     const toasterHTML = `
       <div id="threat-toaster-modal" style="position:fixed; bottom:20px; right:20px; width:450px; max-height:80vh; background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:9999; display:flex; flex-direction:column; overflow:hidden;">
         <div style="padding:15px; background:var(--bg-card-solid); border-bottom:1px solid var(--border-light); display:flex; justify-content:space-between; align-items:center;">
@@ -5221,8 +5221,8 @@ normalization:
         <div style="padding:10px; overflow-y:auto; flex:1; background:var(--bg-body);">
           ${formatThreats.length === 0 ? '<div style="padding:20px; text-align:center; color:var(--text-muted);">No threat logs found for this format.</div>' : ''}
           ${formatThreats.map(ev => {
-            const threatTitle = ev.threat ? ev.threat.threat_type : (ev.action === "deny" || ev.action === "block" ? "Traffic Dropped" : "Unknown Threat");
-            return `
+      const threatTitle = ev.threat ? ev.threat.threat_type : (ev.action === "deny" || ev.action === "block" ? "Traffic Dropped" : "Unknown Threat");
+      return `
               <div id="toaster-log-${ev.event_id || ev.id}" style="margin-bottom:10px; background:var(--bg-card); padding:10px; border-radius:6px; border-left:3px solid var(--danger-main);">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                   <div>
@@ -5238,11 +5238,11 @@ normalization:
                 ${ev.threat && ev.threat.detail ? `<div style="font-size:11px; color:var(--text-muted); margin-top:6px; font-style:italic;">${escapeHtml(ev.threat.detail)}</div>` : ''}
               </div>
             `;
-          }).join("")}
+    }).join("")}
         </div>
       </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', toasterHTML);
   };
 
@@ -6434,9 +6434,9 @@ normalization:
     if (telemetryInterval) clearInterval(telemetryInterval);
     telemetryInterval = setInterval(() => {
       if (state.currentRoute !== "overview") return;
-      
+
       let currentEps = calculateLiveClientEps();
-      
+
       // If no live client events this second, check server live metrics
       if (currentEps === 0 && state.metrics) {
         const liveEps = Number(state.metrics.live_eps) || 0;
@@ -6447,7 +6447,7 @@ normalization:
           currentEps = Math.round(avgEps * (0.8 + Math.random() * 0.4) * 10) / 10;
         }
       }
-      
+
       let parsedRate = currentEps > 0 ? Math.round(currentEps * (0.96 + Math.random() * 0.04) * 10) / 10 : 0;
 
       epsData.push(currentEps);
@@ -6545,7 +6545,7 @@ normalization:
       </div>
 
       <!-- Cryptographic Evidence Ledger (Merkle Forest) -->
-      <div class="card" style="padding: 24px; margin-bottom: 24px;">
+      <div class="card" style="padding: 24px; margin-bottom: 24px; display: none">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap:wrap; gap:12px;">
            <div>
              <h3 style="display:flex; align-items:center; gap:10px; font-size:15px; font-weight:800; color:var(--text-main); margin-bottom:4px;">
@@ -6821,7 +6821,7 @@ normalization:
         try {
           const res = await fetch(`/api/v1/analytics/evidence/${encodeURIComponent(input)}`);
           if (res.ok) evData = await res.json();
-        } catch (e) {}
+        } catch (e) { }
 
         if (evData && (evData.parsed_event || evData.raw_content)) {
           const ev = evData.parsed_event || { original: {}, event: {} };
@@ -6848,8 +6848,8 @@ normalization:
     window.currentMerkleBlock = window.currentMerkleBlock || 0;
     window.merkleTreeData = { tree: [], positions: [], rawEvents: [], totalDbEvents: 0, totalBlocks: 1, highlightedNode: null };
     window.selectedMerkleNode = null;
-    
-    window.setMerkleBlockSize = function(size) {
+
+    window.setMerkleBlockSize = function (size) {
       if (!size || isNaN(size) || size < 4) size = 125;
       window.merkleBlockSize = Number(size);
       window.currentMerkleBlock = 0; // Reset to latest block
@@ -6857,18 +6857,18 @@ normalization:
       showToast(`Fixed Block size updated to ${size} logs per block.`, "info");
     };
 
-    window.goToMerkleBlock = function(blockIndex) {
+    window.goToMerkleBlock = function (blockIndex) {
       window.currentMerkleBlock = Math.max(0, Number(blockIndex) || 0);
       window.fetchAndDrawMerkleGraph();
     };
 
-    window.goToOldestMerkleBlock = function() {
+    window.goToOldestMerkleBlock = function () {
       const totalBlocks = window.merkleTreeData?.totalBlocks || 1;
       window.currentMerkleBlock = Math.max(0, totalBlocks - 1);
       window.fetchAndDrawMerkleGraph();
     };
 
-    window.changeMerkleBlock = function(delta) {
+    window.changeMerkleBlock = function (delta) {
       const totalBlocks = window.merkleTreeData?.totalBlocks || 1;
       let nextBlock = window.currentMerkleBlock + delta;
       if (nextBlock < 0) nextBlock = 0;
@@ -6887,7 +6887,7 @@ normalization:
       window.fetchAndDrawMerkleGraph();
     };
 
-    window.searchMerkleNode = function() {
+    window.searchMerkleNode = function () {
       const q = (document.getElementById("merkleSearchInput")?.value || "").trim().toLowerCase();
       if (!q) {
         showToast("Please enter a hash or Event ID to search.", "info");
@@ -6928,7 +6928,7 @@ normalization:
       }
     };
 
-    window.clearMerkleSearch = function() {
+    window.clearMerkleSearch = function () {
       const input = document.getElementById("merkleSearchInput");
       if (input) input.value = "";
       window.merkleTreeData.highlightedNode = null;
@@ -6937,7 +6937,7 @@ normalization:
       if (window.redrawMerkleCanvas) window.redrawMerkleCanvas();
     };
 
-    window.copyInspectorHash = function() {
+    window.copyInspectorHash = function () {
       const hash = document.getElementById("inspectorHashValue")?.textContent;
       if (hash) {
         navigator.clipboard.writeText(hash);
@@ -6959,7 +6959,7 @@ normalization:
       }, 150);
     };
 
-    window.inspectNode = function(node, level, index) {
+    window.inspectNode = function (node, level, index) {
       if (!node) return;
       window.selectedMerkleNode = node;
       const inspector = document.getElementById("merkleNodeInspector");
@@ -7052,107 +7052,107 @@ normalization:
       }
     };
 
-    window.fetchAndDrawMerkleGraph = async function() {
+    window.fetchAndDrawMerkleGraph = async function () {
       const graphArea = document.getElementById('merkleGraphArea');
       if (!graphArea) return;
-      
+
       const btn = document.getElementById('btnRefreshMerkle');
       if (btn) btn.textContent = 'Loading...';
 
       const blockSize = window.merkleBlockSize || 125;
-      
+
       try {
-         const offset = window.currentMerkleBlock * blockSize;
-         const res = await fetch(`/api/v1/events?limit=${blockSize}&offset=${offset}`);
-         const data = await res.json();
-         const events = data.events || [];
-         const totalDbEvents = (data.total !== undefined) ? Number(data.total) : events.length;
-         const totalBlocks = Math.max(1, Math.ceil(totalDbEvents / blockSize));
+        const offset = window.currentMerkleBlock * blockSize;
+        const res = await fetch(`/api/v1/events?limit=${blockSize}&offset=${offset}`);
+        const data = await res.json();
+        const events = data.events || [];
+        const totalDbEvents = (data.total !== undefined) ? Number(data.total) : events.length;
+        const totalBlocks = Math.max(1, Math.ceil(totalDbEvents / blockSize));
 
-         if (window.currentMerkleBlock >= totalBlocks && totalBlocks > 0) {
-           window.currentMerkleBlock = Math.max(0, totalBlocks - 1);
-         }
+        if (window.currentMerkleBlock >= totalBlocks && totalBlocks > 0) {
+          window.currentMerkleBlock = Math.max(0, totalBlocks - 1);
+        }
 
-         // Update Header Badges
-         const lbl = document.getElementById("merkleBlockLabel");
-         if (lbl) {
-           if (window.currentMerkleBlock === 0) {
-             lbl.textContent = `Block 0 (Latest)`;
-             lbl.className = "badge badge-teal";
-           } else if (window.currentMerkleBlock === totalBlocks - 1 && totalBlocks > 1) {
-             lbl.textContent = `Block ${window.currentMerkleBlock} (Genesis / Oldest)`;
-             lbl.className = "badge badge-purple";
-           } else {
-             lbl.textContent = `Block ${window.currentMerkleBlock}`;
-             lbl.className = "badge badge-cyan";
-           }
-         }
+        // Update Header Badges
+        const lbl = document.getElementById("merkleBlockLabel");
+        if (lbl) {
+          if (window.currentMerkleBlock === 0) {
+            lbl.textContent = `Block 0 (Latest)`;
+            lbl.className = "badge badge-teal";
+          } else if (window.currentMerkleBlock === totalBlocks - 1 && totalBlocks > 1) {
+            lbl.textContent = `Block ${window.currentMerkleBlock} (Genesis / Oldest)`;
+            lbl.className = "badge badge-purple";
+          } else {
+            lbl.textContent = `Block ${window.currentMerkleBlock}`;
+            lbl.className = "badge badge-cyan";
+          }
+        }
 
-         const badgeTotal = document.getElementById('merkleTotalEventsBadge');
-         if (badgeTotal) {
-           badgeTotal.textContent = `${blockSize} Logs/Block · ${totalDbEvents} Total Logs (${totalBlocks} Blocks)`;
-         }
+        const badgeTotal = document.getElementById('merkleTotalEventsBadge');
+        if (badgeTotal) {
+          badgeTotal.textContent = `${blockSize} Logs/Block · ${totalDbEvents} Total Logs (${totalBlocks} Blocks)`;
+        }
 
-         const infoText = document.getElementById('merkleBlockInfoText');
-         if (infoText) {
-           if (totalDbEvents === 0) {
-             infoText.textContent = "0 logs recorded in database";
-           } else {
-             const startNum = offset + 1;
-             const endNum = Math.min(offset + events.length, totalDbEvents);
-             infoText.textContent = `Showing logs ${startNum}–${endNum} of ${totalDbEvents} in Block ${window.currentMerkleBlock} (Block ${window.currentMerkleBlock + 1} of ${totalBlocks})`;
-           }
-         }
+        const infoText = document.getElementById('merkleBlockInfoText');
+        if (infoText) {
+          if (totalDbEvents === 0) {
+            infoText.textContent = "0 logs recorded in database";
+          } else {
+            const startNum = offset + 1;
+            const endNum = Math.min(offset + events.length, totalDbEvents);
+            infoText.textContent = `Showing logs ${startNum}–${endNum} of ${totalDbEvents} in Block ${window.currentMerkleBlock} (Block ${window.currentMerkleBlock + 1} of ${totalBlocks})`;
+          }
+        }
 
-         const rangeBadge = document.getElementById('merkleBlockRangeBadge');
-         if (rangeBadge) {
-           rangeBadge.textContent = `Offset ${offset}..${Math.max(offset, offset + events.length - 1)} · ${events.length} active logs in block`;
-         }
+        const rangeBadge = document.getElementById('merkleBlockRangeBadge');
+        if (rangeBadge) {
+          rangeBadge.textContent = `Offset ${offset}..${Math.max(offset, offset + events.length - 1)} · ${events.length} active logs in block`;
+        }
 
-         const sizeSelect = document.getElementById('merkleBlockSizeSelect');
-         if (sizeSelect) {
-           sizeSelect.value = String(blockSize);
-         }
+        const sizeSelect = document.getElementById('merkleBlockSizeSelect');
+        if (sizeSelect) {
+          sizeSelect.value = String(blockSize);
+        }
 
-         const jumpSelect = document.getElementById('merkleBlockJumpSelect');
-         if (jumpSelect) {
-           jumpSelect.innerHTML = '';
-           if (totalBlocks <= 1 && totalDbEvents === 0) {
-             const opt = document.createElement('option');
-             opt.value = '0';
-             opt.textContent = 'Block 0 (Empty)';
-             jumpSelect.appendChild(opt);
-           } else {
-             for (let b = 0; b < totalBlocks; b++) {
-               const bOffset = b * blockSize;
-               const bEnd = Math.min(bOffset + blockSize, totalDbEvents);
-               const bCount = Math.max(0, bEnd - bOffset);
-               const opt = document.createElement('option');
-               opt.value = String(b);
-               const tag = (b === 0) ? ' [Latest]' : (b === totalBlocks - 1 ? ' [Genesis/Oldest]' : '');
-               opt.textContent = `Block ${b} (${bCount} logs, #${bOffset + 1}–#${bEnd})${tag}`;
-               if (b === window.currentMerkleBlock) opt.selected = true;
-               jumpSelect.appendChild(opt);
-             }
-           }
-         }
+        const jumpSelect = document.getElementById('merkleBlockJumpSelect');
+        if (jumpSelect) {
+          jumpSelect.innerHTML = '';
+          if (totalBlocks <= 1 && totalDbEvents === 0) {
+            const opt = document.createElement('option');
+            opt.value = '0';
+            opt.textContent = 'Block 0 (Empty)';
+            jumpSelect.appendChild(opt);
+          } else {
+            for (let b = 0; b < totalBlocks; b++) {
+              const bOffset = b * blockSize;
+              const bEnd = Math.min(bOffset + blockSize, totalDbEvents);
+              const bCount = Math.max(0, bEnd - bOffset);
+              const opt = document.createElement('option');
+              opt.value = String(b);
+              const tag = (b === 0) ? ' [Latest]' : (b === totalBlocks - 1 ? ' [Genesis/Oldest]' : '');
+              opt.textContent = `Block ${b} (${bCount} logs, #${bOffset + 1}–#${bEnd})${tag}`;
+              if (b === window.currentMerkleBlock) opt.selected = true;
+              jumpSelect.appendChild(opt);
+            }
+          }
+        }
 
-         // Update Navigation Buttons (Disabled state)
-         const btnFirst = document.getElementById('btnFirstMerkleBlock');
-         const btnNext = document.getElementById('btnNextMerkleBlock');
-         const btnPrev = document.getElementById('btnPrevMerkleBlock');
-         const btnLast = document.getElementById('btnLastMerkleBlock');
+        // Update Navigation Buttons (Disabled state)
+        const btnFirst = document.getElementById('btnFirstMerkleBlock');
+        const btnNext = document.getElementById('btnNextMerkleBlock');
+        const btnPrev = document.getElementById('btnPrevMerkleBlock');
+        const btnLast = document.getElementById('btnLastMerkleBlock');
 
-         const isAtLatest = (window.currentMerkleBlock <= 0);
-         const isAtOldest = (window.currentMerkleBlock >= totalBlocks - 1);
+        const isAtLatest = (window.currentMerkleBlock <= 0);
+        const isAtOldest = (window.currentMerkleBlock >= totalBlocks - 1);
 
-         if (btnFirst) btnFirst.disabled = isAtLatest;
-         if (btnNext) btnNext.disabled = isAtLatest;
-         if (btnPrev) btnPrev.disabled = isAtOldest;
-         if (btnLast) btnLast.disabled = isAtOldest;
+        if (btnFirst) btnFirst.disabled = isAtLatest;
+        if (btnNext) btnNext.disabled = isAtLatest;
+        if (btnPrev) btnPrev.disabled = isAtOldest;
+        if (btnLast) btnLast.disabled = isAtOldest;
 
-         if (events.length === 0) {
-            graphArea.innerHTML = `
+        if (events.length === 0) {
+          graphArea.innerHTML = `
               <div style="color: var(--text-muted); text-align: center; padding: 48px 20px; display:flex; flex-direction:column; align-items:center; gap:12px;">
                 <svg class="svg-icon" style="width:38px; height:38px; stroke:var(--primary-main); opacity:0.75;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                 <div style="font-size:15px; font-weight:800; color:var(--text-main);">${totalDbEvents === 0 ? "No Ingested Logs Yet" : "Block " + window.currentMerkleBlock + " Has No Formed Events"}</div>
@@ -7164,267 +7164,267 @@ normalization:
                   <button class="btn btn-sm btn-teal" onclick="window.triggerTraffic(10, 'Firewall-01', 'cef')">+10 Test Logs</button>
                 </div>
               </div>`;
-            window.merkleTreeData = { tree: [], positions: [], rawEvents: [], totalDbEvents, totalBlocks, highlightedNode: null };
-            if (btn) btn.textContent = 'Refresh Tree';
-            return;
-         }
-         
-         const rawEventsClone = events.map(e => ({ ...e }));
-         let targetLeaves = 1;
-         while (targetLeaves < events.length) targetLeaves *= 2;
-         if (targetLeaves < 4) targetLeaves = 4;
-         
-         const paddedLeaves = events.map(e => e.sha256 || 'UNKNOWN_HASH');
-         while (paddedLeaves.length < targetLeaves) {
-             paddedLeaves.push('0000000000000000000000000000000000000000000000000000000000000000');
-         }
-         
-         const tree = [];
-         let currentLevel = [...paddedLeaves];
-         tree.push(currentLevel);
-         
-         while (currentLevel.length > 1) {
-             let nextLevel = [];
-             for (let i = 0; i < currentLevel.length; i += 2) {
-                 const left = currentLevel[i];
-                 const right = (i + 1 < currentLevel.length) ? currentLevel[i + 1] : left;
-                 const combined = left.substring(0, 32) + right.substring(0, 32);
-                 let fakeHash = 0;
-                 for (let j = 0; j < combined.length; j++) {
-                     fakeHash = (fakeHash << 5) - fakeHash + combined.charCodeAt(j);
-                     fakeHash = fakeHash & fakeHash;
-                 }
-                 const hashStr = Math.abs(fakeHash).toString(16).padStart(16, '0') + left.substring(0, 16) + right.substring(0, 16);
-                 nextLevel.push(hashStr.substring(0, 64));
-             }
-             tree.push(nextLevel);
-             currentLevel = nextLevel;
-         }
-         
-         tree.reverse(); // Root at index 0
-         
-         const activeTheme = document.documentElement.getAttribute("data-theme") || "dark";
-         const isLuxury = (activeTheme === "luxury");
-         const isLight = (activeTheme === "light");
+          window.merkleTreeData = { tree: [], positions: [], rawEvents: [], totalDbEvents, totalBlocks, highlightedNode: null };
+          if (btn) btn.textContent = 'Refresh Tree';
+          return;
+        }
 
-         const containerBg = isLuxury ? "rgba(255, 253, 247, 0.95)" : (isLight ? "rgba(248, 250, 252, 0.95)" : "rgba(11, 17, 30, 0.95)");
-         const containerBorder = isLuxury ? "rgba(217, 119, 6, 0.25)" : (isLight ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.08)");
-         const tooltipBg = isLuxury ? "rgba(28, 25, 23, 0.94)" : (isLight ? "rgba(15, 23, 42, 0.94)" : "rgba(15, 23, 42, 0.95)");
-         const tooltipColor = isLuxury ? "#F9F1D7" : (isLight ? "#FFFFFF" : "#00D084");
-         const tooltipBorder = isLuxury ? "1px solid rgba(217, 119, 6, 0.4)" : (isLight ? "none" : "1px solid rgba(0, 208, 132, 0.4)");
+        const rawEventsClone = events.map(e => ({ ...e }));
+        let targetLeaves = 1;
+        while (targetLeaves < events.length) targetLeaves *= 2;
+        if (targetLeaves < 4) targetLeaves = 4;
 
-         graphArea.innerHTML = `<div style="position:relative; width:100%; height:450px; background:${containerBg}; border-radius:12px; border: 1px solid ${containerBorder}; cursor: crosshair; overflow:hidden;" id="canvasContainer"><canvas id="merkleCanvas" style="display:block;"></canvas><div id="graphTooltip" style="position:absolute; display:none; background:${tooltipBg}; color:${tooltipColor}; border:${tooltipBorder}; padding:6px 12px; border-radius:6px; font-size:11px; pointer-events:none; z-index:10; font-family:var(--font-mono); white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div></div>`;
-         
-         const container = document.getElementById('canvasContainer');
-         const canvas = document.getElementById('merkleCanvas');
-         const tooltip = document.getElementById('graphTooltip');
-         
-         const rect = container.getBoundingClientRect();
-         canvas.width = rect.width || container.clientWidth || 800;
-         canvas.height = 450;
-         const ctx = canvas.getContext('2d');
-         
-         const levels = tree.length;
-         const yOffset = 36;
-         const yStep = (canvas.height - (yOffset * 2)) / Math.max(1, levels - 1);
-         
-         const positions = [];
-         for (let i = 0; i < levels; i++) {
-             const nodes = tree[i];
-             const levelPos = [];
-             const xStep = canvas.width / nodes.length;
-             for (let j = 0; j < nodes.length; j++) {
-                 levelPos.push({
-                     x: (j * xStep) + (xStep / 2),
-                     y: yOffset + (i * yStep),
-                     hash: nodes[j],
-                     isRoot: i === 0,
-                     isLeaf: i === levels - 1,
-                     level: i,
-                     index: j,
-                     event: (i === levels - 1 && j < rawEventsClone.length) ? rawEventsClone[j] : null
-                 });
-             }
-             positions.push(levelPos);
-         }
-         
-         window.merkleTreeData = { tree, positions, rawEvents: rawEventsClone, totalDbEvents, totalBlocks, highlightedNode: null };
+        const paddedLeaves = events.map(e => e.sha256 || 'UNKNOWN_HASH');
+        while (paddedLeaves.length < targetLeaves) {
+          paddedLeaves.push('0000000000000000000000000000000000000000000000000000000000000000');
+        }
 
-         const edgeColor = isLuxury ? "rgba(217, 119, 6, 0.28)" : (isLight ? "rgba(2, 132, 199, 0.25)" : "rgba(0, 208, 132, 0.22)");
-         const rootColor = isLuxury ? "#DC2626" : (isLight ? "#DC2626" : "#EF4444");
-         const leafColor = isLuxury ? "#D97706" : (isLight ? "#0284C7" : "#00D084");
-         const innerColor = isLuxury ? "#A8A29E" : (isLight ? "#94A3B8" : "#475569");
-         const activeHighlight = isLuxury ? "#D97706" : (isLight ? "#0284C7" : "#38BDF8");
-         const lensBg = isLuxury ? "#FCFAF1" : (isLight ? "#F8FAFC" : "#080C14");
-         const lensBorder = isLuxury ? "rgba(217, 119, 6, 0.85)" : (isLight ? "rgba(2, 132, 199, 0.85)" : "rgba(0, 208, 132, 0.85)");
+        const tree = [];
+        let currentLevel = [...paddedLeaves];
+        tree.push(currentLevel);
 
-         let mouseX = -1000;
-         let mouseY = -1000;
-         let activeNode = null;
-         const lensRadius = 80;
-         const zoom = 3.0;
-         
-         function drawGraphPaths(isMagnified = false) {
-             ctx.strokeStyle = edgeColor;
-             ctx.lineWidth = isMagnified ? 1.5 / zoom : 1;
-             
-             ctx.beginPath();
-             for (let i = 0; i < levels - 1; i++) {
-                 const parents = positions[i];
-                 const children = positions[i + 1];
-                 for (let j = 0; j < parents.length; j++) {
-                     const p = parents[j];
-                     const c1 = children[j * 2];
-                     const c2 = children[j * 2 + 1];
-                     if (isMagnified) {
-                         const dx = p.x - mouseX;
-                         const dy = p.y - mouseY;
-                         if (Math.abs(dx) > lensRadius * 1.5 || Math.abs(dy) > lensRadius * 1.5) continue;
-                     }
-                     if (c1) { ctx.moveTo(p.x, p.y); ctx.lineTo(c1.x, c1.y); }
-                     if (c2) { ctx.moveTo(p.x, p.y); ctx.lineTo(c2.x, c2.y); }
-                 }
-             }
-             ctx.stroke();
-             
-             for (let i = 0; i < levels; i++) {
-                 for (let j = 0; j < positions[i].length; j++) {
-                     const p = positions[i][j];
-                     
-                     if (isMagnified) {
-                         const dx = p.x - mouseX;
-                         const dy = p.y - mouseY;
-                         if (Math.abs(dx) > lensRadius * 1.5 || Math.abs(dy) > lensRadius * 1.5) continue;
-                     }
-                     
-                     ctx.beginPath();
-                     const radius = p.isRoot ? 5.5 : (p.isLeaf ? 3.5 : 3.5);
-                     ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
-                     
-                     if (p.isRoot) ctx.fillStyle = rootColor;
-                     else if (p.isLeaf) ctx.fillStyle = p.hash === '0000000000000000000000000000000000000000000000000000000000000000' ? (isLuxury ? 'rgba(217,119,6,0.2)' : 'rgba(0,208,132,0.15)') : leafColor;
-                     else ctx.fillStyle = innerColor;
-                     
-                     ctx.fill();
+        while (currentLevel.length > 1) {
+          let nextLevel = [];
+          for (let i = 0; i < currentLevel.length; i += 2) {
+            const left = currentLevel[i];
+            const right = (i + 1 < currentLevel.length) ? currentLevel[i + 1] : left;
+            const combined = left.substring(0, 32) + right.substring(0, 32);
+            let fakeHash = 0;
+            for (let j = 0; j < combined.length; j++) {
+              fakeHash = (fakeHash << 5) - fakeHash + combined.charCodeAt(j);
+              fakeHash = fakeHash & fakeHash;
+            }
+            const hashStr = Math.abs(fakeHash).toString(16).padStart(16, '0') + left.substring(0, 16) + right.substring(0, 16);
+            nextLevel.push(hashStr.substring(0, 64));
+          }
+          tree.push(nextLevel);
+          currentLevel = nextLevel;
+        }
 
-                     const isTargetMatch = window.merkleTreeData.highlightedNode && window.merkleTreeData.highlightedNode.hash === p.hash;
-                     if (isTargetMatch) {
-                         ctx.beginPath();
-                         ctx.arc(p.x, p.y, radius + 4, 0, 2 * Math.PI);
-                         ctx.strokeStyle = activeHighlight;
-                         ctx.lineWidth = 2;
-                         ctx.stroke();
-                     }
-                     
-                     if (isMagnified && activeNode && activeNode.x === p.x && activeNode.y === p.y) {
-                         ctx.beginPath();
-                         ctx.arc(p.x, p.y, radius + 2/zoom, 0, 2 * Math.PI);
-                         ctx.strokeStyle = activeHighlight;
-                         ctx.lineWidth = 2 / zoom;
-                         ctx.stroke();
-                     }
-                 }
-             }
-         }
-         
-         function draw() {
-             ctx.clearRect(0, 0, canvas.width, canvas.height);
-             drawGraphPaths(false);
-             
-             if (mouseX > 0 && mouseX < canvas.width && mouseY > 0 && mouseY < canvas.height) {
-                 ctx.save();
-                 ctx.beginPath();
-                 ctx.arc(mouseX, mouseY, lensRadius, 0, 2 * Math.PI);
-                 ctx.clip();
-                 
-                 ctx.fillStyle = lensBg;
-                 ctx.fill();
-                 
-                 ctx.translate(mouseX, mouseY);
-                 ctx.scale(zoom, zoom);
-                 ctx.translate(-mouseX, -mouseY);
-                 
-                 drawGraphPaths(true);
-                 ctx.restore();
-                 
-                 ctx.beginPath();
-                 ctx.arc(mouseX, mouseY, lensRadius, 0, 2 * Math.PI);
-                 ctx.lineWidth = 3;
-                 ctx.strokeStyle = lensBorder;
-                 ctx.stroke();
-             }
-         }
-         
-         window.redrawMerkleCanvas = draw;
-         draw();
-         
-         container.addEventListener('mousemove', (e) => {
-             const r = canvas.getBoundingClientRect();
-             mouseX = e.clientX - r.left;
-             mouseY = e.clientY - r.top;
-             
-             activeNode = null;
-             let closestDist = (lensRadius / zoom);
-             
-             for (let i = 0; i < levels; i++) {
-                 for (let j = 0; j < positions[i].length; j++) {
-                     const p = positions[i][j];
-                     const dx = p.x - mouseX;
-                     const dy = p.y - mouseY;
-                     const d = Math.sqrt(dx*dx + dy*dy);
-                     if (d < closestDist) {
-                         closestDist = d;
-                         activeNode = p;
-                     }
-                 }
-             }
-             
-             requestAnimationFrame(draw);
-             
-             if (activeNode && closestDist < 12) {
-                 const typeLabel = activeNode.isRoot ? "ROOT ANCHOR" : (activeNode.isLeaf ? "EVENT LEAF" : "INTERMEDIATE PROOF");
-                 const hashSnip = activeNode.hash.substring(0, 16) + '...';
-                 const evId = activeNode.event?.id || activeNode.event?.ulpf?.event_id || "";
-                 tooltip.textContent = `${typeLabel}${evId ? ' [' + evId + ']' : ''}: ${hashSnip} (Click to Inspect)`;
-                 tooltip.style.display = 'block';
-                 let tx = mouseX + lensRadius + 10;
-                 if (tx + 280 > canvas.width) tx = mouseX - lensRadius - 290;
-                 tooltip.style.left = tx + 'px';
-                 tooltip.style.top = (mouseY - 10) + 'px';
-                 container.style.cursor = 'pointer';
-             } else {
-                 tooltip.style.display = 'none';
-                 container.style.cursor = 'crosshair';
-             }
-         });
-         
-         container.addEventListener('mouseleave', () => {
-             mouseX = -1000;
-             mouseY = -1000;
-             activeNode = null;
-             tooltip.style.display = 'none';
-             requestAnimationFrame(draw);
-         });
-         
-         container.addEventListener('click', () => {
-             if (activeNode) {
-                 window.merkleTreeData.highlightedNode = activeNode;
-                 window.inspectNode(activeNode, activeNode.level, activeNode.index);
-                 navigator.clipboard.writeText(activeNode.hash);
-                 showToast(`Copied Node Hash to Clipboard!`, "success");
-                 draw();
-             }
-         });
-         
+        tree.reverse(); // Root at index 0
+
+        const activeTheme = document.documentElement.getAttribute("data-theme") || "dark";
+        const isLuxury = (activeTheme === "luxury");
+        const isLight = (activeTheme === "light");
+
+        const containerBg = isLuxury ? "rgba(255, 253, 247, 0.95)" : (isLight ? "rgba(248, 250, 252, 0.95)" : "rgba(11, 17, 30, 0.95)");
+        const containerBorder = isLuxury ? "rgba(217, 119, 6, 0.25)" : (isLight ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.08)");
+        const tooltipBg = isLuxury ? "rgba(28, 25, 23, 0.94)" : (isLight ? "rgba(15, 23, 42, 0.94)" : "rgba(15, 23, 42, 0.95)");
+        const tooltipColor = isLuxury ? "#F9F1D7" : (isLight ? "#FFFFFF" : "#00D084");
+        const tooltipBorder = isLuxury ? "1px solid rgba(217, 119, 6, 0.4)" : (isLight ? "none" : "1px solid rgba(0, 208, 132, 0.4)");
+
+        graphArea.innerHTML = `<div style="position:relative; width:100%; height:450px; background:${containerBg}; border-radius:12px; border: 1px solid ${containerBorder}; cursor: crosshair; overflow:hidden;" id="canvasContainer"><canvas id="merkleCanvas" style="display:block;"></canvas><div id="graphTooltip" style="position:absolute; display:none; background:${tooltipBg}; color:${tooltipColor}; border:${tooltipBorder}; padding:6px 12px; border-radius:6px; font-size:11px; pointer-events:none; z-index:10; font-family:var(--font-mono); white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.4);"></div></div>`;
+
+        const container = document.getElementById('canvasContainer');
+        const canvas = document.getElementById('merkleCanvas');
+        const tooltip = document.getElementById('graphTooltip');
+
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width || container.clientWidth || 800;
+        canvas.height = 450;
+        const ctx = canvas.getContext('2d');
+
+        const levels = tree.length;
+        const yOffset = 36;
+        const yStep = (canvas.height - (yOffset * 2)) / Math.max(1, levels - 1);
+
+        const positions = [];
+        for (let i = 0; i < levels; i++) {
+          const nodes = tree[i];
+          const levelPos = [];
+          const xStep = canvas.width / nodes.length;
+          for (let j = 0; j < nodes.length; j++) {
+            levelPos.push({
+              x: (j * xStep) + (xStep / 2),
+              y: yOffset + (i * yStep),
+              hash: nodes[j],
+              isRoot: i === 0,
+              isLeaf: i === levels - 1,
+              level: i,
+              index: j,
+              event: (i === levels - 1 && j < rawEventsClone.length) ? rawEventsClone[j] : null
+            });
+          }
+          positions.push(levelPos);
+        }
+
+        window.merkleTreeData = { tree, positions, rawEvents: rawEventsClone, totalDbEvents, totalBlocks, highlightedNode: null };
+
+        const edgeColor = isLuxury ? "rgba(217, 119, 6, 0.28)" : (isLight ? "rgba(2, 132, 199, 0.25)" : "rgba(0, 208, 132, 0.22)");
+        const rootColor = isLuxury ? "#DC2626" : (isLight ? "#DC2626" : "#EF4444");
+        const leafColor = isLuxury ? "#D97706" : (isLight ? "#0284C7" : "#00D084");
+        const innerColor = isLuxury ? "#A8A29E" : (isLight ? "#94A3B8" : "#475569");
+        const activeHighlight = isLuxury ? "#D97706" : (isLight ? "#0284C7" : "#38BDF8");
+        const lensBg = isLuxury ? "#FCFAF1" : (isLight ? "#F8FAFC" : "#080C14");
+        const lensBorder = isLuxury ? "rgba(217, 119, 6, 0.85)" : (isLight ? "rgba(2, 132, 199, 0.85)" : "rgba(0, 208, 132, 0.85)");
+
+        let mouseX = -1000;
+        let mouseY = -1000;
+        let activeNode = null;
+        const lensRadius = 80;
+        const zoom = 3.0;
+
+        function drawGraphPaths(isMagnified = false) {
+          ctx.strokeStyle = edgeColor;
+          ctx.lineWidth = isMagnified ? 1.5 / zoom : 1;
+
+          ctx.beginPath();
+          for (let i = 0; i < levels - 1; i++) {
+            const parents = positions[i];
+            const children = positions[i + 1];
+            for (let j = 0; j < parents.length; j++) {
+              const p = parents[j];
+              const c1 = children[j * 2];
+              const c2 = children[j * 2 + 1];
+              if (isMagnified) {
+                const dx = p.x - mouseX;
+                const dy = p.y - mouseY;
+                if (Math.abs(dx) > lensRadius * 1.5 || Math.abs(dy) > lensRadius * 1.5) continue;
+              }
+              if (c1) { ctx.moveTo(p.x, p.y); ctx.lineTo(c1.x, c1.y); }
+              if (c2) { ctx.moveTo(p.x, p.y); ctx.lineTo(c2.x, c2.y); }
+            }
+          }
+          ctx.stroke();
+
+          for (let i = 0; i < levels; i++) {
+            for (let j = 0; j < positions[i].length; j++) {
+              const p = positions[i][j];
+
+              if (isMagnified) {
+                const dx = p.x - mouseX;
+                const dy = p.y - mouseY;
+                if (Math.abs(dx) > lensRadius * 1.5 || Math.abs(dy) > lensRadius * 1.5) continue;
+              }
+
+              ctx.beginPath();
+              const radius = p.isRoot ? 5.5 : (p.isLeaf ? 3.5 : 3.5);
+              ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+
+              if (p.isRoot) ctx.fillStyle = rootColor;
+              else if (p.isLeaf) ctx.fillStyle = p.hash === '0000000000000000000000000000000000000000000000000000000000000000' ? (isLuxury ? 'rgba(217,119,6,0.2)' : 'rgba(0,208,132,0.15)') : leafColor;
+              else ctx.fillStyle = innerColor;
+
+              ctx.fill();
+
+              const isTargetMatch = window.merkleTreeData.highlightedNode && window.merkleTreeData.highlightedNode.hash === p.hash;
+              if (isTargetMatch) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius + 4, 0, 2 * Math.PI);
+                ctx.strokeStyle = activeHighlight;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+              }
+
+              if (isMagnified && activeNode && activeNode.x === p.x && activeNode.y === p.y) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, radius + 2 / zoom, 0, 2 * Math.PI);
+                ctx.strokeStyle = activeHighlight;
+                ctx.lineWidth = 2 / zoom;
+                ctx.stroke();
+              }
+            }
+          }
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawGraphPaths(false);
+
+          if (mouseX > 0 && mouseX < canvas.width && mouseY > 0 && mouseY < canvas.height) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mouseX, mouseY, lensRadius, 0, 2 * Math.PI);
+            ctx.clip();
+
+            ctx.fillStyle = lensBg;
+            ctx.fill();
+
+            ctx.translate(mouseX, mouseY);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-mouseX, -mouseY);
+
+            drawGraphPaths(true);
+            ctx.restore();
+
+            ctx.beginPath();
+            ctx.arc(mouseX, mouseY, lensRadius, 0, 2 * Math.PI);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = lensBorder;
+            ctx.stroke();
+          }
+        }
+
+        window.redrawMerkleCanvas = draw;
+        draw();
+
+        container.addEventListener('mousemove', (e) => {
+          const r = canvas.getBoundingClientRect();
+          mouseX = e.clientX - r.left;
+          mouseY = e.clientY - r.top;
+
+          activeNode = null;
+          let closestDist = (lensRadius / zoom);
+
+          for (let i = 0; i < levels; i++) {
+            for (let j = 0; j < positions[i].length; j++) {
+              const p = positions[i][j];
+              const dx = p.x - mouseX;
+              const dy = p.y - mouseY;
+              const d = Math.sqrt(dx * dx + dy * dy);
+              if (d < closestDist) {
+                closestDist = d;
+                activeNode = p;
+              }
+            }
+          }
+
+          requestAnimationFrame(draw);
+
+          if (activeNode && closestDist < 12) {
+            const typeLabel = activeNode.isRoot ? "ROOT ANCHOR" : (activeNode.isLeaf ? "EVENT LEAF" : "INTERMEDIATE PROOF");
+            const hashSnip = activeNode.hash.substring(0, 16) + '...';
+            const evId = activeNode.event?.id || activeNode.event?.ulpf?.event_id || "";
+            tooltip.textContent = `${typeLabel}${evId ? ' [' + evId + ']' : ''}: ${hashSnip} (Click to Inspect)`;
+            tooltip.style.display = 'block';
+            let tx = mouseX + lensRadius + 10;
+            if (tx + 280 > canvas.width) tx = mouseX - lensRadius - 290;
+            tooltip.style.left = tx + 'px';
+            tooltip.style.top = (mouseY - 10) + 'px';
+            container.style.cursor = 'pointer';
+          } else {
+            tooltip.style.display = 'none';
+            container.style.cursor = 'crosshair';
+          }
+        });
+
+        container.addEventListener('mouseleave', () => {
+          mouseX = -1000;
+          mouseY = -1000;
+          activeNode = null;
+          tooltip.style.display = 'none';
+          requestAnimationFrame(draw);
+        });
+
+        container.addEventListener('click', () => {
+          if (activeNode) {
+            window.merkleTreeData.highlightedNode = activeNode;
+            window.inspectNode(activeNode, activeNode.level, activeNode.index);
+            navigator.clipboard.writeText(activeNode.hash);
+            showToast(`Copied Node Hash to Clipboard!`, "success");
+            draw();
+          }
+        });
+
       } catch (err) {
-         console.error(err);
-         graphArea.innerHTML = '<div style="color: var(--danger-main); text-align: center; padding: 40px;">Failed to generate Merkle Graph: ' + err.message + '</div>';
+        console.error(err);
+        graphArea.innerHTML = '<div style="color: var(--danger-main); text-align: center; padding: 40px;">Failed to generate Merkle Graph: ' + err.message + '</div>';
       } finally {
-         const btn = document.getElementById('btnRefreshMerkle');
-         if (btn) btn.textContent = 'Refresh Tree';
+        const btn = document.getElementById('btnRefreshMerkle');
+        if (btn) btn.textContent = 'Refresh Tree';
       }
     };
-    
+
     window.fetchAndDrawMerkleGraph();
 
     // Real-Time Analytics Fetch & Refresh Engine
@@ -7527,15 +7527,15 @@ normalization:
 // =========================================================================
 // eBPF Zero-Copy Network Metrics Injector
 // =========================================================================
-(function() {
-    console.log("Initializing eBPF Metrics UI Injection...");
-    
-    // Create the widget seamlessly adhering to active website theme tokens
-    const widget = document.createElement("div");
-    widget.id = "ebpf-metrics-widget";
-    widget.className = "card ebpf-metrics-widget";
-    
-    widget.innerHTML = `
+(function () {
+  console.log("Initializing eBPF Metrics UI Injection...");
+
+  // Create the widget seamlessly adhering to active website theme tokens
+  const widget = document.createElement("div");
+  widget.id = "ebpf-metrics-widget";
+  widget.className = "card ebpf-metrics-widget";
+
+  widget.innerHTML = `
         <div class="ebpf-widget-main">
             <div class="ebpf-shield-group">
                 <div class="ebpf-shield-icon-wrap">
@@ -7570,40 +7570,40 @@ normalization:
         </div>
     `;
 
-    // Inject immediately under top-bar once DOM top-bar is available
-    function attachWidget() {
-        const topBar = document.querySelector(".top-bar");
-        if (topBar && !document.getElementById("ebpf-metrics-widget")) {
-            topBar.parentNode.insertBefore(widget, topBar.nextSibling);
-            return true;
-        }
-        return false;
+  // Inject immediately under top-bar once DOM top-bar is available
+  function attachWidget() {
+    const topBar = document.querySelector(".top-bar");
+    if (topBar && !document.getElementById("ebpf-metrics-widget")) {
+      topBar.parentNode.insertBefore(widget, topBar.nextSibling);
+      return true;
     }
+    return false;
+  }
 
-    if (!attachWidget()) {
-        const tryInject = setInterval(() => {
-            if (attachWidget()) {
-                clearInterval(tryInject);
-            }
-        }, 500);
+  if (!attachWidget()) {
+    const tryInject = setInterval(() => {
+      if (attachWidget()) {
+        clearInterval(tryInject);
+      }
+    }, 500);
+  }
+
+  // Poll the backend endpoint and update counters
+  async function updateEbpfMetrics() {
+    try {
+      const res = await fetch("/api/v1/ebpf-metrics");
+      if (res.ok) {
+        const data = await res.json();
+        const passedEl = document.getElementById("ebpf-passed");
+        const droppedEl = document.getElementById("ebpf-dropped");
+        if (passedEl) passedEl.innerText = Number(data.passed || 0).toLocaleString();
+        if (droppedEl) droppedEl.innerText = Number(data.dropped || 0).toLocaleString();
+      }
+    } catch (e) {
+      // silent fail
     }
+  }
 
-    // Poll the backend endpoint and update counters
-    async function updateEbpfMetrics() {
-        try {
-            const res = await fetch("/api/v1/ebpf-metrics");
-            if (res.ok) {
-                const data = await res.json();
-                const passedEl = document.getElementById("ebpf-passed");
-                const droppedEl = document.getElementById("ebpf-dropped");
-                if (passedEl) passedEl.innerText = Number(data.passed || 0).toLocaleString();
-                if (droppedEl) droppedEl.innerText = Number(data.dropped || 0).toLocaleString();
-            }
-        } catch (e) {
-            // silent fail
-        }
-    }
-
-    updateEbpfMetrics();
-    setInterval(updateEbpfMetrics, 2000);
+  updateEbpfMetrics();
+  setInterval(updateEbpfMetrics, 2000);
 })();

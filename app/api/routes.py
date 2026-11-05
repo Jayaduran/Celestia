@@ -4185,11 +4185,31 @@ def verify_kosmoporos_merkle_block(block_id: int):
 def get_ebpf_metrics():
     try:
         import json
+        import time
         from pathlib import Path
         metrics_path = Path(__file__).resolve().parent.parent.parent / "ebpf_metrics.json"
         if metrics_path.exists():
             with open(metrics_path, "r", encoding="utf-8") as m:
-                return json.load(m)
-        return {"passed": 0, "dropped": 0}
+                data = json.load(m)
+                # If Linux kernel loader.py is running, it writes a recent timestamp
+                if data.get("timestamp") and (time.time() - data.get("timestamp", 0) < 15):
+                    return data
+                if data.get("passed", 0) > 0 or data.get("dropped", 0) > 0:
+                    return data
+
+        # Prototype / Windows fallback: Reflect real ingress & database telemetry
+        syslog_passed = getattr(syslog_collector, "total_received", 0)
+        syslog_dropped = getattr(syslog_collector, "total_dropped_rate_limit", 0)
+        api_passed = api_ingest_stats.get("total_received", 0)
+        total_passed = syslog_passed + api_passed
+        if total_passed == 0:
+            db_total = persistence_manager.db.get_event_stats().get("total_processed", 0)
+            total_passed = max(total_passed, db_total, len(EVENT_LIST))
+
+        return {
+            "passed": total_passed,
+            "dropped": syslog_dropped,
+            "mode": "kernel_bypass_fallback"
+        }
     except Exception as e:
         return {"passed": 0, "dropped": 0, "error": str(e)}
