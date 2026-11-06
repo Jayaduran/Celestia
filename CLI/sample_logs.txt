@@ -1,0 +1,6 @@
+CEF:0|Fortinet|FortiGate|7.2.4|32001|traffic:allow|3|src=192.168.1.101 dst=10.0.0.1 spt=44332 dpt=443 proto=tcp act=allow
+<134>Jan 10 14:32:01 ciscoasa: %ASA-4-106023: Deny tcp src outside:192.168.1.155/54321 dst inside:10.0.0.50/80 by access-group "PERIMETER_SEC"
+devname="PA-5220-DC" type="TRAFFIC" subtype="end" srcip=192.168.1.88 dstip=10.0.0.22 srcport=54123 dstport=22 proto=6 action="deny"
+LEEF:2.0|Suricata|Suricata-IDS|6.0.8|ALERT|devTime=2026-11-05T12:00:00Z|src=10.0.0.99|dst=192.168.1.1|spt=1234|dpt=22|proto=TCP|cat=NetworkSecurity|act=block|sev=5|msg="ET SCAN Potential SSH Brute Force"
+{"agent": "Perimeter-WAF-01", "client_ip": "192.168.1.200", "dest_ip": "10.0.0.1", "dest_port": 443, "method": "POST", "uri": "/api/login", "status": 403, "action": "block"}
+

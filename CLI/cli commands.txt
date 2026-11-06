@@ -1,0 +1,11 @@
+cli commands
+kosmo connect url-link-of-the-server  #used to connect to a server else localhost:8000 will be default
+kosmo send #first log or file in current directory will be sent to the sever(ordered as per date and time modified)
+kosmo send all #sends all logs or files to the server
+kosmo send "directory or file path" #used to send a file or files in a directory
+kosmo send -n 111 #to send specific number of logs from the current directory
+kosmo send "directory_path" -n xxx #sending specific logs from a directory
+kosmo report #receives report of files sent and parsing speeds, successfully sent logs, failed logs, threat logs detected in the terminal
+kosmo report save #saves the report in the current directory as .txt file with lines representing table view
+kosmo report save "directory_path" #saves the report to a specified location
+kosmo --help #displays commands which can be used with one to two lines description

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-11-05T22:41:16.212446+00:00",
+  "server_url": "http://localhost:8000",
+  "files_sent": [
+    "event_unknown.json"
+  ],
+  "total_logs": 212,
+  "success_count": 12,
+  "failed_count": 200,
+  "threats_detected": 2,
+  "elapsed_seconds": 24.59,
+  "speed_eps": 8.6,
+  "last_event_ids": []
+}
