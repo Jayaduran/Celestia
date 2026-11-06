@@ -541,10 +541,12 @@ def store_and_broadcast(ir_event, source_name: str = "network_device"):
         })
 
     # Automated Twilio Voice Call Alert for Critical Threat Logs
+    # STRICT GUARD: Only trigger voice dispatch if an actual critical cyberattack threat was detected
     is_critical_threat = (
-        severity_str.lower() == "critical"
-        or (threat_info and str(threat_info.get("severity", "")).lower() == "critical")
-        or (hasattr(ir_event, "severity") and str(ir_event.severity or "").lower() == "critical")
+        threat_info is not None
+        and isinstance(threat_info, dict)
+        and str(threat_info.get("severity", "")).lower() == "critical"
+        and threat_info.get("threat_type") not in ("Blocked IP Violation", "Blacklisted Traffic Dropped")
     )
     if is_critical_threat:
         twilio_voice_notifier.dispatch_critical_threat_call(
@@ -4287,4 +4289,119 @@ def update_twilio_config(body: Dict[str, Any] = Body(...)):
         "message": "Twilio voice configuration updated.",
         "current_status": twilio_voice_notifier.get_status(),
     }
+
+
+# ==============================================================================
+# AUTHENTICATION & ACTIVE PRESENCE MONITORING ROUTES
+# ==============================================================================
+
+@router.post("/api/v1/auth/signup")
+@router.post("/auth/signup")
+def auth_signup(request: Request, body: Dict[str, Any] = Body(...)):
+    """Register a new SOC operator account and return an active session token."""
+    from app.auth.manager import auth_manager
+    username = body.get("username", "")
+    email = body.get("email", "")
+    password = body.get("password", "")
+    full_name = body.get("full_name") or body.get("name")
+    role = body.get("role", "operator")
+
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    try:
+        res = auth_manager.register_user(
+            username=username,
+            email=email,
+            password=password,
+            full_name=full_name,
+            role=role,
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during registration.")
+
+
+@router.post("/api/v1/auth/login")
+@router.post("/auth/login")
+def auth_login(request: Request, body: Dict[str, Any] = Body(...)):
+    """Authenticate with username/email and password."""
+    from app.auth.manager import auth_manager
+    username_or_email = body.get("username") or body.get("email") or ""
+    password = body.get("password", "")
+
+    client_ip = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
+
+    try:
+        res = auth_manager.authenticate_user(
+            username_or_email=username_or_email,
+            password=password,
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=401, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error during authentication.")
+
+
+@router.post("/api/v1/auth/logout")
+@router.post("/auth/logout")
+def auth_logout(request: Request, body: Dict[str, Any] = Body(default={})):
+    """Invalidate active user session token."""
+    from app.auth.manager import auth_manager
+    token = body.get("token") or request.headers.get("authorization", "").replace("Bearer ", "").strip()
+    auth_manager.logout_session(token)
+    return {"status": "success", "message": "Session terminated."}
+
+
+@router.get("/api/v1/auth/me")
+@router.get("/auth/me")
+def auth_me(request: Request, token: Optional[str] = Query(None)):
+    """Get profile of current authenticated session."""
+    from app.auth.manager import auth_manager
+    auth_token = token or request.headers.get("authorization", "").replace("Bearer ", "").strip()
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Authentication token required.")
+    user = auth_manager.get_user_from_token(auth_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session token.")
+    return {"status": "success", "user": user}
+
+
+@router.post("/api/v1/auth/heartbeat")
+@router.post("/auth/heartbeat")
+def auth_heartbeat(request: Request, body: Dict[str, Any] = Body(default={})):
+    """
+    Heartbeat ping from active browser session.
+    Keeps presence state live and informs caller whether voice alerts are currently suppressed.
+    """
+    from app.auth.manager import auth_manager
+    token = body.get("token") or request.headers.get("authorization", "").replace("Bearer ", "").strip()
+    is_visible = body.get("is_visible", True)
+    client_ip = request.client.host if request.client else None
+
+    res = auth_manager.record_heartbeat(
+        session_token=token,
+        is_visible=is_visible,
+        ip_address=client_ip,
+    )
+    return res
+
+
+@router.get("/api/v1/auth/presence")
+@router.get("/auth/presence")
+def auth_presence():
+    """Check active operator presence and whether automated voice calls are suppressed."""
+    from app.auth.manager import auth_manager
+    return auth_manager.get_presence_status()
+
 

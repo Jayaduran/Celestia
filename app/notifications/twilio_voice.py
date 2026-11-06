@@ -65,6 +65,10 @@ class TwilioVoiceNotifier:
         from app.config.settings import settings
         return getattr(settings, "twilio_cooldown_seconds", 60)
 
+    @property
+    def target_number(self) -> str:
+        return self.to_number
+
     def is_configured(self) -> bool:
         """Check if active Twilio credentials have been supplied."""
         sid = self.account_sid
@@ -126,6 +130,46 @@ class TwilioVoiceNotifier:
         now = time.time()
         threat_key = f"{threat_type}:{src_ip}"
 
+        # Guard: Non-critical events or routine traffic must not trigger emergency voice phone calls
+        non_critical_threats = ("Blocked IP Violation", "Blacklisted Traffic Dropped", "Security", "unknown", "traffic", "Generic", "N/A", "")
+        if not force and (threat_type in non_critical_threats or not threat_type):
+            logger.info(f"[Twilio Voice] Suppressed call: '{threat_type}' is not a verified critical attack.")
+            return {
+                "status": "suppressed_non_critical",
+                "threat_type": threat_type,
+                "src_ip": src_ip,
+                "message": f"Voice call suppressed: '{threat_type}' does not meet critical threat threshold.",
+            }
+
+        # Presence Check: Avoid voice phone call if an operator or web visitor is actively on the website
+        if not force:
+            try:
+                from app.auth.manager import auth_manager
+                is_present, active_info = auth_manager.check_presence()
+                if is_present and active_info:
+                    active_user = active_info.get("username", "operator")
+                    idle_s = active_info.get("idle_seconds", 0)
+                    logger.info(
+                        f"[Twilio Voice Avoided] Critical threat '{threat_type}' from {src_ip}, "
+                        f"but active operator '{active_user}' is monitoring the console ({idle_s}s ago). Voice call avoided."
+                    )
+                    record = {
+                        "call_id": f"AVOIDED-{int(now * 1000)}",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "to_number": target_number,
+                        "threat_type": threat_type,
+                        "src_ip": src_ip,
+                        "status": "suppressed_presence",
+                        "active_operator": active_user,
+                        "idle_seconds": idle_s,
+                        "message": f"Voice call avoided: operator '{active_user}' is actively logged in on the web console.",
+                    }
+                    self._record_history(record)
+                    self._notify_broadcast(record)
+                    return record
+            except Exception as e:
+                logger.debug(f"Presence check evaluation: {e}")
+
         with self.lock:
             # Strict 1-minute (60s) cooldown between repeated voice calls
             if not force:
@@ -156,7 +200,8 @@ class TwilioVoiceNotifier:
         twiml_payload = self.build_twiml(threat_type=threat_type, src_ip=src_ip, detail=detail)
 
         # Check if Twilio is configured with real credentials
-        if not self.is_configured():
+        configured = self.is_configured() if callable(self.is_configured) else bool(self.is_configured)
+        if not configured:
             logger.warning(
                 f"[Twilio Voice Simulation] Critical Threat: '{threat_type}' from {src_ip}! "
                 f"Simulated voice call placed to {target_number}. "
@@ -180,6 +225,27 @@ class TwilioVoiceNotifier:
             return record
 
         # Perform actual HTTP call to Twilio REST API
+        record = self._dispatch_carrier_call(
+            target_number=target_number,
+            twiml_payload=twiml_payload,
+            now=now,
+            threat_type=threat_type,
+            src_ip=src_ip,
+        )
+
+        self._record_history(record)
+        self._notify_broadcast(record)
+        return record
+
+    def _dispatch_carrier_call(
+        self,
+        target_number: str,
+        twiml_payload: str,
+        now: float,
+        threat_type: str,
+        src_ip: str,
+    ) -> Dict[str, Any]:
+        """Perform external network HTTP call to Twilio REST API."""
         sid = self.account_sid
         token = self.auth_token
         from_num = self.from_number
@@ -206,7 +272,7 @@ class TwilioVoiceNotifier:
                 call_sid = resp_data.get("sid", "N/A")
                 call_status = resp_data.get("status", "queued")
                 logger.info(f"[Twilio Voice] Voice call successfully queued to {target_number} (SID: {call_sid}, Status: {call_status})")
-                record = {
+                return {
                     "call_id": f"CALL-{int(now * 1000)}",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "to_number": target_number,
@@ -221,7 +287,7 @@ class TwilioVoiceNotifier:
             else:
                 error_body = resp.text
                 logger.error(f"[Twilio Voice] Failed calling Twilio API: HTTP {resp.status_code} - {error_body}")
-                record = {
+                return {
                     "call_id": f"CALL-{int(now * 1000)}",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "to_number": target_number,
@@ -234,7 +300,7 @@ class TwilioVoiceNotifier:
                 }
         except Exception as e:
             logger.error(f"[Twilio Voice] Exception making phone call to {target_number}: {e}")
-            record = {
+            return {
                 "call_id": f"CALL-{int(now * 1000)}",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "to_number": target_number,
@@ -245,10 +311,6 @@ class TwilioVoiceNotifier:
                 "error": str(e),
             }
 
-        self._record_history(record)
-        self._notify_broadcast(record)
-        return record
-
     def dispatch_critical_threat_call(
         self,
         event_record: Dict[str, Any],
@@ -258,19 +320,25 @@ class TwilioVoiceNotifier:
         """
         Asynchronously dispatch a voice call in a background daemon thread
         so log ingestion throughput remains at maximum velocity.
+        ONLY fires if an actual critical threat verdict is confirmed.
         """
-        threat_type = "Critical Security Alert"
-        detail = ""
-        if threat_info:
-            threat_type = threat_info.get("threat_type") or threat_info.get("signature") or threat_type
-            detail = threat_info.get("detail", "")
-        elif event_record.get("threat"):
-            t = event_record["threat"]
-            threat_type = t.get("threat_type") or threat_type
-            detail = t.get("detail", "")
-        elif event_record.get("event_type"):
-            threat_type = str(event_record.get("event_type"))
+        threat = threat_info or event_record.get("threat")
+        if not threat or not isinstance(threat, dict):
+            logger.debug("[Twilio Voice] Suppressed dispatch: No security threat detected in event.")
+            return
 
+        sev = str(threat.get("severity", "")).lower()
+        if sev != "critical":
+            logger.debug(f"[Twilio Voice] Suppressed dispatch: Threat severity '{sev}' is not critical.")
+            return
+
+        threat_type = threat.get("threat_type") or threat.get("signature") or ""
+        non_critical_threats = ("Blocked IP Violation", "Blacklisted Traffic Dropped", "Security", "unknown", "traffic", "Generic", "N/A", "")
+        if threat_type in non_critical_threats or not threat_type:
+            logger.debug(f"[Twilio Voice] Suppressed dispatch: '{threat_type}' does not meet critical threat criteria.")
+            return
+
+        detail = threat.get("detail", "")
         src_ip = event_record.get("src_ip") or "Unknown"
 
         def _worker():

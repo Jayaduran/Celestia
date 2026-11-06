@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 import logging
 import asyncio
 from datetime import datetime, timedelta, timezone
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 
 # Retention cleanup task definition
 async def retention_cleanup_task():
@@ -152,9 +152,56 @@ async def audit_log(request: Request, call_next):
 app.include_router(api_router)
 
 
+# Mount Landing Page static directory if present
+landing_dir = Path(__file__).parent.parent / "landing"
+if landing_dir.exists():
+    app.mount("/landing", StaticFiles(directory=str(landing_dir), html=True), name="landing")
+
+
 @app.get("/")
 def read_root():
+    if landing_dir.exists() and (landing_dir / "index.html").exists():
+        return FileResponse(str(landing_dir / "index.html"))
     return RedirectResponse(url="/dashboard/")
+
+
+@app.get("/login")
+def login_redirect():
+    """Direct route for operator login: opens landing page with login modal active."""
+    return RedirectResponse(url="/#login")
+
+
+@app.get("/logo.png")
+def get_root_logo():
+    if landing_dir.exists() and (landing_dir / "logo.png").exists():
+        return FileResponse(str(landing_dir / "logo.png"))
+    if dashboard_dir.exists() and (dashboard_dir / "logo.png").exists():
+        return FileResponse(str(dashboard_dir / "logo.png"))
+    return RedirectResponse(url="/landing/logo.png")
+
+
+@app.get("/logo_icon.png")
+@app.get("/favicon.ico")
+def get_root_logo_icon():
+    if landing_dir.exists() and (landing_dir / "logo_icon.png").exists():
+        return FileResponse(str(landing_dir / "logo_icon.png"))
+    if dashboard_dir.exists() and (dashboard_dir / "logo_icon.png").exists():
+        return FileResponse(str(dashboard_dir / "logo_icon.png"))
+    return RedirectResponse(url="/landing/logo_icon.png")
+
+
+@app.get("/style.css")
+def get_root_style():
+    if landing_dir.exists() and (landing_dir / "style.css").exists():
+        return FileResponse(str(landing_dir / "style.css"))
+    return RedirectResponse(url="/landing/style.css")
+
+
+@app.get("/app.js")
+def get_root_app():
+    if landing_dir.exists() and (landing_dir / "app.js").exists():
+        return FileResponse(str(landing_dir / "app.js"))
+    return RedirectResponse(url="/landing/app.js")
 
 
 

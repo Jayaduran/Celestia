@@ -58,6 +58,7 @@
     initGlobalSearch();
     initModalHandlers();
     initTopBarControls();
+    initDashboardAuth();
     initSseStream();
     fetchMetrics();
     fetchEvents();
@@ -242,6 +243,101 @@
       toast.style.transition = "opacity 0.4s ease";
       setTimeout(() => toast.remove(), 400);
     }, 8500);
+  }
+
+  // --- OPERATOR SESSION AUTH & PRESENCE IN DASHBOARD ---
+  let dashboardHeartbeatInterval = null;
+
+  async function initDashboardAuth() {
+    const container = document.getElementById("dashboardAuthContainer");
+    if (!container) return;
+
+    const token = localStorage.getItem("celestia_session_token");
+    if (!token) {
+      renderDashboardUnauthenticated(container);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/v1/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        renderDashboardAuthenticated(container, data.user);
+        startDashboardPresence(token);
+      } else {
+        localStorage.removeItem("celestia_session_token");
+        renderDashboardUnauthenticated(container);
+      }
+    } catch (e) {
+      renderDashboardUnauthenticated(container);
+    }
+  }
+
+  function renderDashboardAuthenticated(container, user) {
+    const name = user ? (user.full_name || user.username) : "Operator";
+    container.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px; padding:4px 10px; border-radius:6px; background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.35);">
+        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981;" title="Operator Presence Active &bull; Twilio Voice Paused"></span>
+        <span style="font-size:11.5px; font-weight:700; color:#10B981; font-family:var(--font-mono);">${name}</span>
+        <button id="btnDashboardSignOut" class="btn btn-xs" style="padding:2px 7px; font-size:10.5px; border-radius:4px; background:rgba(255,255,255,0.06); color:var(--text-silver); border:1px solid rgba(255,255,255,0.15); cursor:pointer;">
+          Sign Out
+        </button>
+      </div>
+    `;
+    const btn = document.getElementById("btnDashboardSignOut");
+    if (btn) {
+      btn.addEventListener("click", async () => {
+        const token = localStorage.getItem("celestia_session_token");
+        if (token) {
+          try {
+            await fetch("/api/v1/auth/logout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+              body: JSON.stringify({ token })
+            });
+          } catch (e) {}
+        }
+        localStorage.removeItem("celestia_session_token");
+        if (dashboardHeartbeatInterval) {
+          clearInterval(dashboardHeartbeatInterval);
+          dashboardHeartbeatInterval = null;
+        }
+        renderDashboardUnauthenticated(container);
+      });
+    }
+  }
+
+  function renderDashboardUnauthenticated(container) {
+    container.innerHTML = `
+      <a href="/login" class="btn btn-sm btn-secondary" style="text-decoration:none; border-color:rgba(16, 185, 129, 0.35); color:#10B981; display:flex; align-items:center; gap:6px;" title="Sign in as Operator to establish live presence & pause emergency telephony">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#94a3b8;"></span>
+        <span>Operator Sign In</span>
+      </a>
+    `;
+    startDashboardPresence();
+  }
+
+  function startDashboardPresence() {
+    async function sendPing() {
+      try {
+        const token = localStorage.getItem("celestia_session_token") || "guest_web_session";
+        const headers = { "Content-Type": "application/json" };
+        if (token && token !== "guest_web_session") {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+        await fetch("/api/v1/auth/heartbeat", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ token, is_visible: document.visibilityState === "visible" })
+        });
+      } catch (e) {}
+    }
+    sendPing();
+    if (!dashboardHeartbeatInterval) {
+      dashboardHeartbeatInterval = setInterval(sendPing, 10000);
+    }
   }
 
   // --- ROUTER ---
