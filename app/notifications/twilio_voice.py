@@ -165,7 +165,7 @@ class TwilioVoiceNotifier:
                         "message": f"Voice call avoided: operator '{active_user}' is actively logged in on the web console.",
                     }
                     self._record_history(record)
-                    self._notify_broadcast(record)
+                    # Voice call avoided: do NOT broadcast calling alert to web UI
                     return record
             except Exception as e:
                 logger.debug(f"Presence check evaluation: {e}")
@@ -191,7 +191,7 @@ class TwilioVoiceNotifier:
                         "reason": f"Throttled by 1-minute ({self.cooldown_seconds}s) cooldown guard between repeated calls.",
                     }
                     self._record_history(record)
-                    self._notify_broadcast(record)
+                    # Throttled by cooldown: do NOT broadcast calling alert to web UI
                     return record
 
             self._last_call_time = now
@@ -362,6 +362,25 @@ class TwilioVoiceNotifier:
                 self.call_history.pop()
 
     def _notify_broadcast(self, record: Dict[str, Any]) -> None:
+        """
+        Broadcast Twilio call events via SSE ONLY when a real dispatch occurs
+        and no active operator is viewing the web console.
+        """
+        status = record.get("status")
+        # Never broadcast to frontend UI if call was suppressed, throttled, or avoided
+        if status not in ("initiated", "simulated"):
+            return
+
+        # Suppress broadcast to web UI if operator or visitor is active on the site
+        try:
+            from app.auth.manager import auth_manager
+            is_present, _ = auth_manager.check_presence()
+            if is_present:
+                logger.debug(f"[Twilio Voice] UI broadcast omitted for call {record.get('call_id')}: web operator active.")
+                return
+        except Exception:
+            pass
+
         if callable(self.broadcast_callback):
             try:
                 self.broadcast_callback({

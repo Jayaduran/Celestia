@@ -130,14 +130,24 @@
     }
   }
 
+  let lastLandingPing = 0;
   function startPresenceHeartbeat() {
     sendPresencePing();
     if (!state.heartbeatIntervalId) {
-      state.heartbeatIntervalId = setInterval(sendPresencePing, 10000);
+      state.heartbeatIntervalId = setInterval(sendPresencePing, 8000);
+      window.addEventListener("focus", sendPresencePing);
+      window.addEventListener("click", sendPresencePing);
+      window.addEventListener("keydown", sendPresencePing);
+      window.addEventListener("mousemove", () => {
+        if (Date.now() - lastLandingPing > 15000) sendPresencePing();
+      });
     }
   }
 
   async function sendPresencePing() {
+    const now = Date.now();
+    if (now - lastLandingPing < 3000) return;
+    lastLandingPing = now;
     try {
       const activeToken = state.sessionToken || "guest_web_session";
       const headers = { "Content-Type": "application/json" };

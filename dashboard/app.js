@@ -320,7 +320,11 @@
   }
 
   function startDashboardPresence() {
+    let lastPingTime = 0;
     async function sendPing() {
+      const now = Date.now();
+      if (now - lastPingTime < 3000) return;
+      lastPingTime = now;
       try {
         const token = localStorage.getItem("celestia_session_token") || "guest_web_session";
         const headers = { "Content-Type": "application/json" };
@@ -336,7 +340,13 @@
     }
     sendPing();
     if (!dashboardHeartbeatInterval) {
-      dashboardHeartbeatInterval = setInterval(sendPing, 10000);
+      dashboardHeartbeatInterval = setInterval(sendPing, 8000);
+      window.addEventListener("focus", sendPing);
+      window.addEventListener("click", sendPing);
+      window.addEventListener("keydown", sendPing);
+      window.addEventListener("mousemove", () => {
+        if (Date.now() - lastPingTime > 15000) sendPing();
+      });
     }
   }
 
@@ -405,10 +415,28 @@
           // 1b. Twilio Automated Voice Alert Notification
           if (payload.type === "TWILIO_CALL_ALERT") {
             const callData = payload.data || {};
+            // Strictly ignore avoided, suppressed, throttled, or non-active calls
+            if (
+              !callData ||
+              !callData.status ||
+              callData.status === "suppressed_presence" ||
+              callData.status === "throttled" ||
+              callData.status === "disabled" ||
+              callData.status === "suppressed_non_critical"
+            ) {
+              return;
+            }
+
+            // If the user/operator is currently active on the page, NEVER show a "calling" toast
+            // The operator is already on the website viewing live events and critical security alerts
+            if (document.visibilityState === "visible") {
+              return;
+            }
+
             const toNum = callData.to_number || "+17372508034";
             const threat = callData.threat_type || "Critical Threat";
-            const statusLabel = callData.status === "initiated" ? "Carrier Call Dialed" : (callData.status === "simulated" ? "Voice Call Simulated" : "Call Cooldown Active");
-            showToast(`📞 Twilio Voice Alert (${statusLabel}): ${toNum} - ${threat}`, "info");
+            const statusLabel = callData.status === "initiated" ? "Carrier Call Dialed" : "Voice Call Simulated";
+            showToast(`📞 Emergency Voice Telephony (${statusLabel}): ${toNum} - ${threat}`, "warning");
           }
 
           // 2. IP Blacklist Updated
