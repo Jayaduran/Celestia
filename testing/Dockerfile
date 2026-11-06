@@ -17,7 +17,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     TESTING_HOST=0.0.0.0 \
     TESTING_PORT=8050 \
-    ULPF_INTERNAL_API_HOST=host.docker.internal \
+    ULPF_INTERNAL_API_HOST=ulpf-api \
     PYTHONPATH=/app/testing:/app
 
 # Install system dependencies

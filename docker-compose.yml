@@ -329,6 +329,28 @@ services:
       - ulpf-net
     restart: unless-stopped
 
+  # ----------------------------------------------------------------------------
+  # 11. ULPF Testing Simulator & Protocol Testing Hub (Dedicated Testing Site)
+  # ----------------------------------------------------------------------------
+  ulpf-testing:
+    build:
+      context: ./testing
+      dockerfile: Dockerfile
+    image: celestia-ulpf-testing:latest
+    container_name: ulpf-testing
+    ports:
+      - "8050:8050"
+    environment:
+      - TESTING_HOST=0.0.0.0
+      - TESTING_PORT=8050
+      - ULPF_INTERNAL_API_HOST=ulpf-api
+      - ULPF_INTERNAL_AI_HOST=ulpf-ai
+    depends_on:
+      - ulpf-api
+    networks:
+      - ulpf-net
+    restart: unless-stopped
+
 
 volumes:
   minio_data:

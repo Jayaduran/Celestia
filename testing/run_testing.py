@@ -11,7 +11,10 @@ from pathlib import Path
 # Add root, testing/, testing/server, and main/ to sys.path
 TESTING_DIR = Path(__file__).resolve().parent
 SERVER_DIR = TESTING_DIR / "server"
-ROOT_DIR = TESTING_DIR.parent
+if (TESTING_DIR / "server").exists() and not (TESTING_DIR.parent / "testing").exists():
+    ROOT_DIR = TESTING_DIR
+else:
+    ROOT_DIR = TESTING_DIR.parent
 
 for p in [ROOT_DIR, TESTING_DIR, SERVER_DIR, ROOT_DIR / "main"]:
     if str(p) not in sys.path:
