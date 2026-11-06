@@ -10,7 +10,7 @@ Welcome to the official technical documentation repository for the **Universal L
 ##  Documentation Index
 
 ### 1. System Architecture & Core Concepts
-* **[System Architecture](architecture.md)**: High-level architectural overview, decoupled design philosophy, deterministic parsing pipeline, intermediate representation (ULPF-IR), and storage topology.
+* **[System Architecture](architecture.md)**: High-level architectural overview, decoupled design philosophy, deterministic parsing pipeline, intermediate representation (ULPF-IR), operator authentication, presence monitoring, autonomous Twilio telephony alerting, and storage topology.
 * **[Two-Page Architecture Summary](architecture_2page.md)**: Concise executive summary of ULPF for presentations and audits.
 * **[Data Flow & Event Lifecycle](data-flow.md)**: Detailed trace of a log line from network socket arrival to OpenSearch indexing and tamper-evident archival.
 * **[ULPF-IR Canonical Taxonomy](ulpf-ir.md)**: The standard JSON schema definition for normalized logs, compatible with OCSF and Elastic Common Schema (ECS).
@@ -62,7 +62,10 @@ docker compose up -d --build
    ```cmd
    start_main.bat
    ```
-   * **Dashboard**: `http://localhost:8000/dashboard/index.html`
+   * **Landing Page**: `http://localhost:8000/`
+   * **SOC Control Center**: `http://localhost:8000/dashboard/`
+   * **Operator Login & Presence**: `http://localhost:8000/login`
+   * **Embedded Testing Studio**: `http://localhost:8000/testing/`
    * **Swagger API Docs**: `http://localhost:8000/docs`
 
 2. **Start the Testing Simulator Hub (Port `8050`)**:
@@ -76,5 +79,5 @@ docker compose up -d --build
    ```cmd
    test_pipeline.bat
    ```
-   Executes all 5 test stages (Pytest suites, Smoke test, Security test, Stack verify, Benchmark).
+   Executes all test stages (Pytest suites, Smoke test, Security test, Stack verify, Benchmark).
 

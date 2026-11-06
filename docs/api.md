@@ -213,6 +213,90 @@ Synthesizes standard YAML Sigma detection rules from observed exploit traffic.
 
 ---
 
+### 5. Operator Authentication & Presence Subsystem
+
+#### `POST /api/v1/auth/login`
+Authenticates SOC operator credentials against persistent SQLite storage using salted SHA-256 password hashing. Returns a bearer session token.
+
+**Request**:
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+**Response `200 OK`**:
+```json
+{
+  "status": "success",
+  "message": "Authentication successful.",
+  "token": "c541a595e5f01dcedd594dbe671bc95c0560e68b597963f61493ca7193e23a83",
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@celestia.local",
+    "full_name": "SOC Lead Operator",
+    "role": "admin"
+  }
+}
+```
+
+#### `POST /api/v1/auth/signup`
+Creates a new persistent operator account with distinct full name, email, role, and credential validation.
+
+#### `GET /api/v1/auth/me`
+Retrieves currently authenticated operator profile, permissions, and active session status.
+* Header: `Authorization: Bearer <session_token>`
+
+#### `POST /api/v1/auth/logout`
+Invalidates the operator session token in SQLite and restores telephony emergency voice dispatch.
+
+#### `POST /api/v1/auth/heartbeat`
+Transmits a browser presence beacon (sent every 10 seconds by active browser tabs). Dynamically suppresses automated Twilio emergency phone calls while an operator or analyst is actively monitoring the console. Supports both authenticated sessions and guest web visitors.
+
+**Request**:
+```json
+{
+  "token": "c541a595e5f01dcedd594dbe671bc95c0560e68b597963f61493ca7193e23a83",
+  "is_visible": true
+}
+```
+
+#### `GET /api/v1/auth/presence`
+Returns diagnostic presence summary, operator idle timer, threshold limit (45s), and voice call suppression state.
+
+---
+
+### 6. Twilio Autonomous Voice Telephony Subsystem
+
+#### `GET /api/v1/notifications/twilio`
+Retrieves live telephony alert status, configuration credentials, 60-second cooldown timer, and recent call audit ledger.
+
+**Response `200 OK`**:
+```json
+{
+  "enabled": true,
+  "configured": true,
+  "target_number": "+917760823239",
+  "from_number": "+17372508034",
+  "account_sid_masked": "ACba...f52a",
+  "cooldown_seconds": 60,
+  "cooldown_active": false,
+  "cooldown_remaining_seconds": 0,
+  "total_calls_triggered": 0,
+  "recent_calls": []
+}
+```
+
+#### `POST /api/v1/notifications/twilio/test-call`
+Manually triggers an emergency carrier phone call to test the Twilio telephony integration.
+
+#### `POST /api/v1/notifications/twilio/config`
+Dynamically updates target telephone number, Twilio credentials, and cooldown duration without restarting the service.
+
+---
+
 ## Part 2: Testing Simulator Hub API (`:8050`)
 
 The Testing Hub provides specialized endpoints for synthetic telemetry dispatch, cyber attack simulation, stress testing, and remote server targeting:

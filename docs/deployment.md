@@ -62,7 +62,7 @@ docker compose up -d
 
 `docker compose up -d` (or `./deploy.sh`) will automatically:
 1. Pull all verified public multi-arch container images (`minio`, `redis`, `redpanda`, `opensearch`)
-2. Build the local `ulpf-api`, `ulpf-worker`, and `ulpf-simulator` containers
+2. Build the local `ulpf-api`, `ulpf-worker`, and `ulpf-testing` containers
 3. Launch all services in the background
 4. Auto-initialize Redpanda streaming topics (`ulpf-raw-ingress`, `ulpf-events-normalized`, `ulpf-alerts`) via `redpanda-init`
 5. Auto-initialize MinIO evidence bucket (`ulpf-raw`) on startup
@@ -71,14 +71,45 @@ docker compose up -d
 
 ---
 
-### Step 3 — Edit Production Password
+### Step 3 — Configure Production Environment & Secrets
 
 ```bash
 nano .env
-# Customize: MINIO_SECRET_KEY=YOUR_SECURE_PASSWORD
-# Then restart:
+# Customize passwords, ports, and emergency phone notifications
+# Then restart containers:
 docker compose up -d
 ```
+
+#### Core Production Environment Variables
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `ULPF_ENV` | `production` | Deployment environment identifier (`development` / `production`). |
+| `MINIO_ROOT_USER` | `minioadmin` | MinIO root access username. |
+| `MINIO_ROOT_PASSWORD` | `minioadmin` | MinIO root access password / secret key. |
+| `MINIO_ENDPOINT` | `http://ulpf-minio:9000` | S3 API endpoint for raw immutable payload ledger. |
+| `OPENSEARCH_URL` | `http://ulpf-opensearch:9200` | OpenSearch normalized events index endpoint. |
+| `REDPANDA_BROKERS` | `ulpf-redpanda:9092` | Kafka/Redpanda distributed message bus brokers. |
+| `AI_ENABLED` | `false` | Enable local LLM fallback (Qwen 2.5 on Ollama) for zero-day drift. |
+
+#### Twilio Autonomous Telephony & Voice Alerts
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `TWILIO_VOICE_ENABLED` | `true` | Master toggle for carrier voice call dispatch on critical threats. |
+| `TWILIO_ACCOUNT_SID` | `AC...` | Twilio Account SID from carrier console. |
+| `TWILIO_AUTH_TOKEN` | `...` | Twilio Auth Token credential. |
+| `TWILIO_FROM_NUMBER` | `+1...` | Twilio registered outbound caller ID. |
+| `TWILIO_TO_NUMBER` | `+91...` | Designated security officer emergency mobile number. |
+| `TWILIO_COOLDOWN_SECONDS` | `60` | Cooldown period between successive calls to avoid storm dialing. |
+
+#### Operator Authentication & Web Presence Shield
+
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `ULPF_AUTH_DB_PATH` | `data/auth.db` | Local SQLite path storing operator credentials and active sessions. |
+| `ULPF_SESSION_EXPIRY_HOURS` | `24` | Inactivity lifetime for operator session bearer tokens. |
+| `ULPF_PRESENCE_TIMEOUT_SECONDS` | `45` | Time window within which browser heartbeats mark an operator as active on the web (suppressing automated voice calls). |
 
 ---
 
@@ -101,14 +132,15 @@ curl http://localhost:8000/api/v1/health/live
 
 | Service | URL |
 |---------|-----|
-|  SOC Dashboard | `http://<VM_IP>:8000/dashboard/index.html` |
-|  REST API Docs | `http://<VM_IP>:8000/docs` |
-|  Testing Simulator | `http://<VM_IP>:8050/` |
-|  Redpanda Visualizer | `http://<VM_IP>:8085/` |
-|  MinIO Console | `http://<VM_IP>:9001` |
-|  OpenSearch | `http://<VM_IP>:9200` |
-|  Syslog UDP | `<VM_IP>:5140` (UDP) |
-|  Syslog TCP | `<VM_IP>:5141` (TCP) |
+|  Island Sovereign Landing Page | `http://<VM_IP>:8000/` |
+|  SOC Forensic Dashboard | `http://<VM_IP>:8000/dashboard/index.html` |
+|  REST API Docs & OpenAPI | `http://<VM_IP>:8000/docs` |
+|  Testing Simulator Hub | `http://<VM_IP>:8050/` (or via gateway `/testing/`) |
+|  Redpanda Stream Visualizer | `http://<VM_IP>:8085/` |
+|  MinIO Storage Console | `http://<VM_IP>:9001` |
+|  OpenSearch Index Explorer | `http://<VM_IP>:9200` |
+|  Syslog UDP Ingress | `<VM_IP>:5140` (UDP) |
+|  Syslog TCP Ingress | `<VM_IP>:5141` (TCP) |
 
 ---
 

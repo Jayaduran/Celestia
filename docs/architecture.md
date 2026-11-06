@@ -85,10 +85,67 @@ Existing SIEM architectures face three critical bottlenecks:
 * **Standardized Egress**: Simultaneous translation to **OCSF v1.1.0 (Class 4001)** and **Elastic ECS v8.x**.
 * **Streaming Sinks**: Partitioned high-speed streaming into **Redpanda / Kafka (:9092)** and **OpenSearch (:9200)**.
 * **Live Forensic Console**: Real-time Socket Radar Scope, transmission wiretap feeds, and threat visualization.
+* **Island Zen Garden Sovereign Ingress**: Minimalist, zen-garden landing page (`/` and `/landing/`) styled in warm earthy tones (`#EDE9E6`, `#C9996B`, `#5C4F4A`, `#5C766D`) acting as the public portal with operator sign-in modal before forwarding to the SOC Forensic Console.
 
 ---
 
-## 4. The Decoupled Testing Simulator Studio (`testing/`, Port 8050)
+## 4. Operator Authentication & Telephony Presence Shield
+
+To safeguard enterprise SOC operations from both unauthorized tampering and notification fatigue, ULPF introduces a real-time operator presence and credential subsystem:
+
+```text
+       ┌────────────────────────────────────────────────────────┐
+       │             Browser Visitor / SOC Operator             │
+       └───────────────────────────┬────────────────────────────┘
+                                   │
+              10s Presence Beacon  │ (POST /api/v1/auth/heartbeat)
+                                   ▼
+       ┌────────────────────────────────────────────────────────┐
+       │        Operator Auth & Presence Shield (app/auth)      │
+       │  • SQLite WAL Session & Operator Table (Salted SHA-256)│
+       │  • Sliding 45s Activity Window Tracked In-Memory       │
+       └───────────────────────────┬────────────────────────────┘
+                                   │
+                      Active Presence Detected?
+                      ├── YES ──► Suppress Voice Call (Operator Monitoring Web)
+                      │
+                      └── NO  ──► Is Threat Critical & Validated Attack?
+                                   ├── YES ──► Autonomous Twilio Voice Call (TwiML)
+                                   └── NO  ──► Suppress (Benign RFC 5424 PRI 2 / Block Drop)
+```
+
+### 4.1 Operator Credentials & Session Management
+- **Local SQLite Database (`data/auth.db`)**: Isolated WAL-mode database storing registered security operators and active bearer tokens.
+- **Salted SHA-256 Hashing**: 16-byte cryptographically secure random salt paired with SHA-256 prevents rainbow table and collision exploits.
+- **Session Tokens**: 32-byte cryptographic hex tokens validated on protected routes with sliding expiration (configurable via `AUTH_SESSION_EXPIRY_HOURS`).
+
+### 4.2 Web Presence Shield
+- **10-Second Heartbeats**: Both unauthenticated visitors on the landing page and authenticated operators in the SOC console emit periodic heartbeats (`POST /api/v1/auth/heartbeat`).
+- **45-Second Sliding Window**: If any active web session has checked in within the last 45 seconds (`AUTH_PRESENCE_TIMEOUT_SECONDS`), operator presence is marked **ACTIVE**.
+- **Alert Suppression**: Automated phone notifications are silenced while human eyes are actively viewing the screen, preventing notification spam.
+
+---
+
+## 5. Autonomous Twilio Voice Telephony Dispatch
+
+When perimeter defenses detect a verified critical cyberattack while **no operator is on the web**, ULPF automatically dials the designated security officer via carrier voice lines:
+
+* **Strict Threat Qualification**:
+  Routine syslogs with RFC 5424 PRI 2 (severity code 2 = "Critical") or routine blacklisted IP discards are intentionally **excluded** from triggering voice calls. Telephony dispatch strictly requires a verified cyberattack signature (SQLi, XSS, Ransomware, Brute-Force, etc.) with `severity == "critical"`.
+* **Dynamic TwiML Generation**: Synthesizes neural text-to-speech alerting the responder with the specific threat classification, source IP, and timestamp:
+  ```xml
+  <Response>
+    <Say voice="Polly.Joanna-Neural">
+      Emergency Security Alert from Celestia ULPF. A critical threat has been detected: SQL Injection Exploit from IP 198.51.100.44. Please inspect the SOC console immediately.
+    </Say>
+  </Response>
+  ```
+* **Cooldown Deduplication Guard**: Enforces an atomic 60-second cooldown (`TWILIO_COOLDOWN_SECONDS`) to prevent concurrent storm calls during distributed flood events.
+* **Carrier Mocking in Test**: Seamlessly mocked in unit testing (`_dispatch_carrier_call`) ensuring zero carrier charges during automated CI/CD runs.
+
+---
+
+## 6. The Decoupled Testing Simulator Studio (`testing/`, Port 8050)
 
 To provide enterprise-grade verification without polluting production databases, ULPF runs an independent testing simulator:
 

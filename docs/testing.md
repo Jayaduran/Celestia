@@ -7,11 +7,13 @@
 
 ## 1. Overview & Architecture
 
-The **ULPF Testing Simulator Hub** is an independent, browser-accessible testing laboratory running on **Port `8050`**:
-* **URL**: `http://127.0.0.1:8050`
-* **Startup Script**: `start_testing.bat` (or `python testing/server/sim_server.py`)
+The **ULPF Testing Simulator Hub** is an independent, browser-accessible testing laboratory running on **Port `8050`** and integrated across the enterprise stack:
+* **Dual Access Architecture**:
+  1. **Dedicated Container / Microservice**: `http://127.0.0.1:8050` (via container `ulpf-testing` or `python testing/run_testing.py`).
+  2. **Gateway Ingress Reverse-Proxy**: `http://127.0.0.1:8000/testing/` (reverse-proxied via the main ULPF API on port `8000` for single-origin enterprise environments).
 * **Palette Compliance**: Designed strictly with the 4-color palette (`#EDE9E6`, `#C9996B`, `#5C4F4A`, `#5C766D`).
 * **Architectural Decoupling**: Completely segregated from the production server (port `8000`), ensuring that synthetic traffic, attack simulations, and stress tests never pollute production pipelines.
+* **Autonomous Telephony & Auth Testbeds**: Includes specialized test harnesses verifying operator presence shields and Twilio critical voice dispatch.
 
 ---
 
@@ -131,13 +133,13 @@ A 6-scenario cyber threat simulation arsenal with 1-click execution:
 
 ---
 
-### Tab 6: Automated Test Pipeline Runner (`test_pipeline.bat`)
-* **Direct Web Integration of `test_pipeline.bat`**:
+### Tab 6: Automated Test Pipeline Runner (`testing/run_pipeline.py`)
+* **Direct Web Integration of Pipeline Runner**:
   - Operators can trigger full automated regression, unit, and benchmark tests directly from the Testing Studio with 1 click.
   - **Target Stage Selectors**:
     - ` Run Full Pipeline (All 5 Stages)`
     - ` Fast Smoke Check (--fast)`
-    - ` Pytest Test Suites (--suites)` (13 test suites, 61 unit tests)
+    - ` Pytest Test Suites (--suites)` (18 test suites, 102 unit tests including `test_auth.py` and `test_twilio_voice.py`)
     - ` End-to-End Smoke Test (--smoke)` (10 verification phases)
     - ` Security & Cyber Resilience (--security)` (8 attack tests)
     - ` Stack & Subsystem Verification (--stack)` (10 runtime subsystem checks)
@@ -172,9 +174,10 @@ For headless CI/CD, terminals, or automation scripts:
 
 | Script / Command | Description | Expected Output |
 | :--- | :--- | :--- |
-| `test_pipeline.bat` | Root automated test pipeline running all 5 regression stages. | `ALL PIPELINE CHECKS PASSED [OK]` |
+| `python testing/run_pipeline.py` | Root automated test pipeline running all regression stages. | `ALL PIPELINE CHECKS PASSED [OK]` |
 | `python testing/smoke_test.py` | 10-phase end-to-end smoke test suite. | `10/10 PASS` |
 | `python scripts/verify_stack.py` | Subsystems verification (Docker, AI, Redpanda, MinIO). | `10/10 PASS` |
-| `python testing/security/security_smoke_test.py` | 8 security & resilience verification tests. | `8/8 PASS` |
-| `pytest testing/suites/` | 13 test suites covering parsers, normalizer, and collectors. | `61 passed in ~0.35s` |
-| `python testing/benchmarks/benchmark.py --events 1000` | Throughput and latency benchmark. | `> 50,000 EPS` |
+| `pytest testing/suites/` | 18 test suites covering parsers, normalizer, collectors, auth, and Twilio telephony. | `102 passed in ~15s` |
+| `pytest testing/suites/test_auth.py` | Operator credentials, salted hashing, bearer sessions, and heartbeat presence. | `2/2 PASS` |
+| `pytest testing/suites/test_twilio_voice.py` | Critical threat voice triggers, presence suppression, and cooldown logic. | `7/7 PASS` |
+| `python testing/benchmark_all.py` | End-to-end throughput and latency benchmark suite. | `> 50,000 EPS` |
